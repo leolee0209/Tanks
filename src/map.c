@@ -1,5 +1,5 @@
 #include "map.h"
-#include <stdio.h>
+#include <ncurses.h>
 #include <stdlib.h>
 #include "circleList.h"
 #include "tank.h"
@@ -55,7 +55,7 @@ void closeEntities(struct node* start){
         free(n->before);
     }
 }
-void printMap(char **map, struct node *start)
+void printMap(WINDOW* win, char **map, struct node *start)
 {
     clearMap(map);
     makeWall(map);
@@ -65,9 +65,9 @@ void printMap(char **map, struct node *start)
     {
         for (int j = 0; j < mapWidth; j++)
         {
-            printf("%c", map[i][j]);
+            wprintw(win, "%c", map[i][j]);
         }
-        printf("\n");
+        wprintw(win, "\n");
     }
 }
 void makeWall(char **map)

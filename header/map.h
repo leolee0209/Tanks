@@ -1,6 +1,6 @@
 #ifndef MAP_H
 #define MAP_H
-#include <wchar.h>
+#include <ncurses.h>
 
 
 struct node;
@@ -8,7 +8,7 @@ char**initMap();
 struct node *initEntityList();
 void closeMap(char**map);
 void closeEntities(struct node *start);
-void printMap(char**map, struct node* start);
+void printMap(WINDOW* win, char**map, struct node* start);
 void makeWall(char**map);
 void clearMap(char**map);
 void makeEntities(char**map, struct node *start);

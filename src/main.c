@@ -1,51 +1,61 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "map.h"
-#include <curses.h>
+#include <ncurses.h>
 #include "tank.h"
 #include <time.h>
 #include "circleList.h"
-#include <wchar.h>
+#include <unistd.h>
 
-
-int frameMilliSec = 500;
+int frameMicroSec = 100000;
 
 int main()
 {
+    initscr();
+    WINDOW *win = newwin(10, 20, 5, 8);
+    refresh();
+    nodelay(stdscr,true);
+    cbreak();
+    keypad(stdscr, true);
+    noecho();
 
     char**map = initMap();
     struct node *start = initEntityList();
 
-    char input;
+    int input = 0;
     int quit = 0;
     clock_t t;
     while (!quit)
     {
         t = clock();
+        input = ' ';
 
-        printMap(map, start);
-        printf("Enter (q to quit): \n");
-        if (_kbhit())
-            input = _getch();
+        printMap(win, map, start);
+        wprintw(win, "Enter (q to quit): \n");
+        input = getch();
+        wrefresh(win);
+        flushinp();
         switch (input)
         {
-        case 'q':
+            case 'q':
             quit = 1;
-            printf("Exiting the program.\n");
+            wprintw(win, "Exiting the program.\n");
             break;
-        case 'w':
-        case 'a':
-        case 's':
-        case 'd':
+            case 'w':
+            case 'a':
+            case 's':
+            case 'd':
             moveTank(map, &(start->me), input);
             break;
         }
-
+        
         t = clock() - t;
-        _sleep(frameMilliSec - 1000 * t / CLOCKS_PER_SEC);
+        usleep(frameMicroSec - 1000000 * t / CLOCKS_PER_SEC);
+        wclear(win);
     }
     closeMap(map);
     closeEntities(start);
 
+    endwin();
     return 0;
 }
