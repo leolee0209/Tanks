@@ -4,7 +4,7 @@
 
 #include "circleList.h"
 
-void putTank(char** map, struct entity* tank);
-void moveTank(char** map, struct entity *tank, char move);
+void putTank(char*** map, struct entity* tank);
+void moveTank(char*** map, struct entity *tank, char move);
 
 #endif

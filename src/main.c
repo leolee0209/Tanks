@@ -19,7 +19,7 @@ int main()
     keypad(stdscr, true);
     noecho();
 
-    char**map = initMap();
+    char***map = initMap();
     struct node *start = initEntityList();
 
     int input = 0;

@@ -3,12 +3,12 @@
 #include <wchar.h>
 
 
-void putTank(char**map, struct entity *tank)
+void putTank(char***map, struct entity *tank)
 {
-    map[tank->posy][tank->posx] = tank->character;
+    (*map)[tank->posy][tank->posx] = tank->character;
 }
 
-void moveTank(char**map, struct entity *tank, char move)
+void moveTank(char***map, struct entity *tank, char move)
 {
     int x = tank->posx, y = tank->posy;
     switch (move)

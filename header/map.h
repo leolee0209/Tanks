@@ -4,15 +4,15 @@
 
 
 struct node;
-char**initMap();
+char***initMap();
 struct node *initEntityList();
-void closeMap(char**map);
+void closeMap(char***map);
 void closeEntities(struct node *start);
-void printMap(WINDOW* win, char**map, struct node* start);
-void makeWall(char**map);
-void clearMap(char**map);
-void makeEntities(char**map, struct node *start);
-int checkNoWall(char**map, int y, int x);
+void printMap(WINDOW* win, char***map, struct node* start);
+void makeWall(char***map);
+void clearMap(char***map);
+void makeEntities(char***map, struct node *start);
+int checkNoWall(char***map, int y, int x);
 int checkInBound(int y, int x);
 
 #endif

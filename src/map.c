@@ -11,12 +11,13 @@ const int initPosy = 4;
 const char wall = '#';
 const char tank = '@';
 
-char **initMap()
+char ***initMap()
 {
-    char **map = malloc(mapHeight * sizeof(char *));
+    char ***map = malloc(sizeof(char *));
+    (*map) = malloc(mapHeight * sizeof(char *));
     for (int i = 0; i < mapHeight; i++)
     {
-        map[i] = malloc(mapWidth * sizeof(char));
+        (*map)[i] = malloc(mapWidth * sizeof(char));
     }
 
     return map;
@@ -31,13 +32,13 @@ struct node *initEntityList()
     start->before = start;
     return start;
 }
-void closeMap(char **map)
+void closeMap(char ***map)
 {
     for (int i = 0; i < mapHeight; i++)
     {
-        free(map[i]);
+        free((*map)[i]);
     }
-    free(map);
+    free(*map);
 }
 void closeEntities(struct node* start){
     if(start->after==start){
@@ -55,7 +56,7 @@ void closeEntities(struct node* start){
         free(n->before);
     }
 }
-void printMap(WINDOW* win, char **map, struct node *start)
+void printMap(WINDOW* win, char ***map, struct node *start)
 {
     clearMap(map);
     makeWall(map);
@@ -65,40 +66,40 @@ void printMap(WINDOW* win, char **map, struct node *start)
     {
         for (int j = 0; j < mapWidth; j++)
         {
-            wprintw(win, "%c", map[i][j]);
+            wprintw(win, "%c", (*map)[i][j]);
         }
         wprintw(win, "\n");
     }
 }
-void makeWall(char **map)
+void makeWall(char ***map)
 {
     for (int j = 0; j < mapHeight; j++)
     {
-        map[j][0] = wall;
+        (*map)[j][0] = wall;
     }
     for (int j = 0; j < mapHeight; j++)
     {
-        map[j][mapWidth - 1] = wall;
+        (*map)[j][mapWidth - 1] = wall;
     }
 
     for (int i = 1; i < mapWidth - 1; i++)
     {
-        map[0][i] = wall;
-        map[mapHeight - 1][i] = wall;
+        (*map)[0][i] = wall;
+        (*map)[mapHeight - 1][i] = wall;
     }
 }
-void clearMap(char **map)
+void clearMap(char ***map)
 {
     for (int i = 0; i < mapHeight; i++)
     {
         for (int j = 0; j < mapWidth; j++)
         {
-            map[i][j] = ' ';
+            (*map)[i][j] = ' ';
         }
     }
 }
 
-void makeEntities(char **map, struct node *start)
+void makeEntities(char ***map, struct node *start)
 {
     if (!start)
     {
@@ -116,11 +117,11 @@ void makeEntities(char **map, struct node *start)
     }
 }
 
-int checkNoWall(char **map, int y, int x)
+int checkNoWall(char ***map, int y, int x)
 {
     if (checkInBound(y, x))
     {
-        return map[y][x] != wall;
+        return (*map)[y][x] != wall;
     }
     return 0;
 }
