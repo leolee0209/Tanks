@@ -3,24 +3,71 @@
 #include <stdlib.h>
 #include "circleList.h"
 #include "tank.h"
+#include "characters.h"
 
-const int mapWidth = 16;
-const int mapHeight = 8;
+int mapHeight = 8;
+int mapWidth = 16;
 const int initPosx = 7;
 const int initPosy = 4;
-const char wall = '#';
-const char tank = '@';
 
-char ***initMap()
+
+void initMap(char ***map)
 {
-    char ***map = malloc(sizeof(char *));
-    (*map) = malloc(mapHeight * sizeof(char *));
+    getMapFromFile("/home/leo/Projects/Tanks/data/map1.txt", map);
+}
+void allocMap(int h, int w, char ***map)
+{
+    if (!map)
+        return;
+    if (*map)
+    {
+        if (**map)
+        {
+            closeMap(map);
+        }
+        else
+        {
+            free(*map);
+        }
+    }
+    (*map) = malloc(h * sizeof(char *));
+    for (int i = 0; i < h; i++)
+    {
+        (*map)[i] = malloc(w * sizeof(char));
+    }
+}
+int getMapFromFile(const char *fileName, char ***map)
+{
+    FILE *f = fopen(fileName, "r");
+    if (!f || !map)
+        return -1;
+
+    int h, w;
+    char str[256];
+    if (!fgets(str, 256, f))
+        return -1;
+    sscanf(str, "%d,%d\n", &h, &w);
+    if (h <= 0 || w <= 0)
+        return -1;
+    mapHeight = h;
+    mapWidth = w;
+    allocMap(h, w, map);
+
+    char *temp = malloc(sizeof(char) * w);
+
     for (int i = 0; i < mapHeight; i++)
     {
-        (*map)[i] = malloc(mapWidth * sizeof(char));
+        fgets(temp, w + 2, f);
+
+        for (int j = 0; j < w && temp[j] != '\n'; j++)
+        {
+            (*map)[i][j] = temp[j];
+        }
     }
 
-    return map;
+    fclose(f);
+    free(temp);
+    return 0;
 }
 struct node *initEntityList()
 {
@@ -40,14 +87,18 @@ void closeMap(char ***map)
     }
     free(*map);
 }
-void closeEntities(struct node* start){
-    if(start->after==start){
+void closeEntities(struct node *start)
+{
+    if (start->after == start)
+    {
         free(start);
         return;
     }
     struct node *n = start->after;
-    while(1){
-        if(n->after==start){
+    while (1)
+    {
+        if (n->after == start)
+        {
             free(n);
             free(start);
             return;
@@ -56,11 +107,11 @@ void closeEntities(struct node* start){
         free(n->before);
     }
 }
-void printMap(WINDOW* win, char ***map, struct node *start)
+void printMap(WINDOW *win, char ***map, struct node *start)
 {
-    clearMap(map);
-    makeWall(map);
-    makeEntities(map, start);
+    // clearMap(map);
+    // makeWall(map);
+    //makeEntities(map, start);
 
     for (int i = 0; i < mapHeight; i++)
     {
@@ -108,7 +159,7 @@ void makeEntities(char ***map, struct node *start)
     struct node *n = start;
     while (1)
     {
-        putTank(map, &n->me);
+        //putTank(map, &n->me);
         if (n->after == start)
         {
             break;

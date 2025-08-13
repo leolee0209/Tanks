@@ -12,14 +12,15 @@ int frameMicroSec = 100000;
 int main()
 {
     initscr();
-    WINDOW *win = newwin(10, 20, 5, 8);
+    WINDOW *win = newwin(0, 0, 0, 0);
     refresh();
     nodelay(stdscr,true);
     cbreak();
     keypad(stdscr, true);
     noecho();
 
-    char***map = initMap();
+    char **map=NULL;
+    initMap(&map);
     struct node *start = initEntityList();
 
     int input = 0;
@@ -30,8 +31,8 @@ int main()
         t = clock();
         input = ' ';
 
-        printMap(win, map, start);
-        wprintw(win, "Enter (q to quit): \n");
+        printMap(win, &map, start);
+        //wprintw(win, "Enter (q to quit): \n");
         input = getch();
         wrefresh(win);
         flushinp();
@@ -45,7 +46,7 @@ int main()
             case 'a':
             case 's':
             case 'd':
-            moveTank(map, &(start->me), input);
+            moveTank(&map, &(start->me), input);
             break;
         }
         
@@ -53,7 +54,7 @@ int main()
         usleep(frameMicroSec - 1000000 * t / CLOCKS_PER_SEC);
         wclear(win);
     }
-    closeMap(map);
+    closeMap(&map);
     closeEntities(start);
 
     endwin();

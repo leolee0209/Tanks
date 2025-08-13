@@ -1,10 +1,12 @@
 #include "tank.h"
 #include "map.h"
-#include <wchar.h>
+#include "characters.h"
 
-
-void putTank(char***map, struct entity *tank)
+void putTank(char***map, struct entity *tank, int ay, int ax)
 {
+    (*map)[tank->posy][tank->posx] = air;
+    tank->posy += ay;
+    tank->posx += ax;
     (*map)[tank->posy][tank->posx] = tank->character;
 }
 
@@ -15,19 +17,19 @@ void moveTank(char***map, struct entity *tank, char move)
     {
     case 'w':
         if (checkNoWall(map, y - 1, x))
-            tank->posy--;
+            putTank(map, tank, -1, 0);
         break;
     case 'a':
         if (checkNoWall(map, y, x - 1))
-            tank->posx--;
+            putTank(map, tank, 0, -1);
         break;
     case 's':
         if (checkNoWall(map, y + 1, x))
-            tank->posy++;
+            putTank(map, tank, +1, 0);
         break;
     case 'd':
         if (checkNoWall(map, y, x + 1))
-            tank->posx++;
+            putTank(map, tank, 0, 1);
         break;
     }
 }
