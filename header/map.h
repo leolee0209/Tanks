@@ -1,20 +1,24 @@
 #ifndef MAP_H
 #define MAP_H
+
 #include <ncurses.h>
 
-
+typedef struct Map
+{
+    int height, width;
+    int inity, initx;
+    char **map;
+} Map;
 struct node;
-void initMap(char*** map);
-int getMapFromFile(const char *fileName, char ***map);
-struct node *initEntityList();
-void closeMap(char***map);
+int initMap(Map* map);
+int getMapFromFile(const char *fileName, Map *map);
+int initEntityList(Map* map, struct node* start);
+void closeMap(Map *map);
 void closeEntities(struct node *start);
-void printMap(WINDOW* win, char***map, struct node* start);
-void makeWall(char***map);
-void clearMap(char***map);
+void printMap(WINDOW* win, Map *map);
 void makeEntities(char***map, struct node *start);
-int checkNoWall(char***map, int y, int x);
-int checkInBound(int y, int x);
-void allocMap(int h, int w, char ***map);
+int checkNoWall(Map *map, int y, int x);
+int checkInBound(Map *map, int y, int x);
+int allocMap(Map *map, int h, int w);
 
 #endif

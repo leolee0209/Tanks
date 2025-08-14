@@ -2,15 +2,15 @@
 #include "map.h"
 #include "characters.h"
 
-void putTank(char***map, struct entity *tank, int ay, int ax)
+void putTank(Map *map, struct entity *tank, int ay, int ax)
 {
-    (*map)[tank->posy][tank->posx] = air;
+    map->map[tank->posy][tank->posx] = air;
     tank->posy += ay;
     tank->posx += ax;
-    (*map)[tank->posy][tank->posx] = tank->character;
+    map->map[tank->posy][tank->posx] = tank->character;
 }
 
-void moveTank(char***map, struct entity *tank, char move)
+void moveTank(Map* map, struct entity *tank, char move)
 {
     int x = tank->posx, y = tank->posy;
     switch (move)
@@ -31,5 +31,7 @@ void moveTank(char***map, struct entity *tank, char move)
         if (checkNoWall(map, y, x + 1))
             putTank(map, tank, 0, 1);
         break;
+    default:
+        putTank(map, tank, 0, 0);
     }
 }

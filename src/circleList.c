@@ -1,7 +1,5 @@
 #include "circleList.h"
 #include "stddef.h"
-#include <wchar.h>
-
 
 struct node* get(struct node *start, int num)
 {

@@ -1,8 +1,5 @@
 #ifndef CIRCLE_LIST_H
 #define CIRCLE_LIST_H
-#include <wchar.h>
-
-
 struct entity
 {
     int posx;
