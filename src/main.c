@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include "map.h"
 #include <ncurses.h>
@@ -8,6 +7,7 @@
 #include <unistd.h>
 
 WINDOW *initCursesWindow();
+void getInput(int *input, char *move, WINDOW *win);
 
 int frameMicroSec = 50000;
 int framePerMove = 5;
@@ -15,59 +15,48 @@ int framePerMove = 5;
 int main()
 {
     initscr();
+    srandom(time(NULL));
 
     WINDOW *win = initCursesWindow();
-
     Map map;
     if (!initMap(&map))
-    {
         return 0;
-    }
     struct node start;
     if (!initEntityList(&map, &start))
-    {
         return 0;
-    }
+
 
     int input = 0;
-    char move = ' ';
     clock_t t;
-    int counter = 1;
+    unsigned int counter = 1;
     while (1)
     {
         t = clock();
 
+        wclear(win);
         printMap(win, &map);
-        input = getch();
-        if (input != ERR)
-        {
-            move = input;
-        }
-        wrefresh(win);
-        flushinp();
-
-        if (move == 'q')
+        
+        getInput(&input, &(start.me.direction), win);
+        if (input == 'q')
         {
             wprintw(win, "Exiting the program.\n");
             break;
         }
 
-        if (counter == framePerMove)
+        spawnEnemy(&map, &start, counter);
+        if (counter % framePerMove ==0)
         {
-            moveTank(&map, &(start.me), move);
-            counter = 0;
+            moveTank(&map, &start, start.me.direction);
+            moveEnemy(&map, &start);
         }
 
-        wclear(win);
-
         counter++;
-
         t = clock() - t;
         usleep(frameMicroSec - 1000000 * t / CLOCKS_PER_SEC);
     }
-    closeMap(&map);
-    closeEntities(&start);
 
+    closeMap(&map);
+    closeEntityList(&start);
     endwin();
     return 0;
 }
@@ -81,4 +70,14 @@ WINDOW *initCursesWindow()
     keypad(stdscr, true);
     noecho();
     return w;
+}
+void getInput(int *input, char *move, WINDOW *win)
+{
+    *input = getch();
+    if (*input != ERR)
+    {
+        *move = *input;
+    }
+    wrefresh(win);
+    flushinp();
 }

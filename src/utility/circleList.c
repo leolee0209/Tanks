@@ -1,5 +1,5 @@
 #include "circleList.h"
-#include "stddef.h"
+#include "characters.h"
 
 struct node* get(struct node *start, int num)
 {
@@ -16,6 +16,19 @@ struct node* get(struct node *start, int num)
         start = start->after;
     }
     return start;
+}
+iterator getIterator(node *start)
+{
+    return (iterator){.start = start, .now = start};
+}
+int next(iterator *i)
+{
+    if(i->now->after==i->start){
+        i->now = NULL;
+        return FAIL;
+    }
+    i->now = i->now->after;
+    return SUCCESS;
 }
 void append(struct node *start, struct node *a)
 {
