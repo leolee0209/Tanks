@@ -64,7 +64,12 @@ void printMap(WINDOW *win, Map *map)
 
 void spawnEnemy(Map *map, node *start, int counter)
 {
-    if (counter % map->enemyRule.random !=0)
+    if (counter % map->enemyRule.random != 0)
+    {
+        return;
+    }
+
+    if (map->enemyRule.max != -1 && length(start) - 1 >= map->enemyRule.max)
     {
         return;
     }
@@ -86,9 +91,9 @@ void spawnEnemy(Map *map, node *start, int counter)
         map->map[new->me.posy][new->me.posx] = new->me.character;
     }
 
-    for (int i = 0; i < avaiCount;i++){
+    for (int i = 0; i < avaiCount; i++)
+    {
         free(available[i]);
     }
     free(available);
 }
-

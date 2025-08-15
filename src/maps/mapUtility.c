@@ -3,6 +3,7 @@
 #include <ncurses.h>
 #include "characters.h"
 #include <string.h>
+#include "cJSON.h"
 
 int loadMapFile(const char *mapFileName, Map *map);
 int loadEnemyFile(const char *enemyFileName, Map *map);
@@ -34,13 +35,13 @@ int getMapFromFile(const char *fileName, Map *map)
     strcat(mapFileName, fileName);
     strcat(mapFileName, maptxt);
 
-    if (!(enemyFileName = calloc(strlen(fileName) + strlen(enemytxt) + 1, sizeof(char))))
+    if (!(enemyFileName = calloc(strlen(fileName) + strlen(enemyjson) + 1, sizeof(char))))
     {
         free(mapFileName);
         return FAIL;
     }
     strcat(enemyFileName, fileName);
-    strcat(enemyFileName, enemytxt);
+    strcat(enemyFileName, enemyjson);
 
     if (!loadMapFile(mapFileName, map))
     {
@@ -66,27 +67,37 @@ int loadEnemyFile(const char *enemyFileName, Map *map)
     if (!enemyFile || !map)
         return FAIL;
 
-    char str[256];
-    char type[256];
-    int time;
-    while (fgets(str, 256, enemyFile))
-    {
-        for (int i = 0; i < 256; i++)
-        {
-            if (str[i] == ':')
-            {
-                strncpy(type, str, sizeof(char) * i);
-                time = atoi(str + i + 1);
-                break;
-            }
-        }
+    map->enemyRule.random = -1;
+    
 
-        if (strcmp(type, "random") == 0)
+    char str[1024];
+    char rule[256];
+    int value;
+
+    int len = fread(str, sizeof(char), 1024, enemyFile);
+    if(!feof(enemyFile)&&ferror(enemyFile)){
+        fclose(enemyFile);
+        return FAIL;
+    }
+    cJSON *enemyJson = cJSON_ParseWithLength(str, len);
+    if (enemyJson == NULL)
+    {
+        const char *error_ptr = cJSON_GetErrorPtr();
+        if (error_ptr != NULL)
         {
-            map->enemyRule.random = time;
+            fprintf(stderr, "Error before: %s\n", error_ptr);
         }
+        cJSON_Delete(enemyJson);
+        return FAIL;
     }
 
+    cJSON *max = cJSON_GetObjectItemCaseSensitive(enemyJson, "max");
+    map->enemyRule.max = cJSON_IsNumber(max) ? max->valueint : -1;
+
+    cJSON *random = cJSON_GetObjectItemCaseSensitive(enemyJson, "random");
+    map->enemyRule.random = cJSON_IsNumber(random) ? random->valueint : -1;
+
+    cJSON_Delete(enemyJson);
     fclose(enemyFile);
     return SUCCESS;
 }
@@ -159,12 +170,11 @@ int getEmptyPos(Map *map, int **available)
     return avaiCount;
 }
 
-
-int checkNoWall(Map *map, int y, int x)
+int checkEmpty(Map *map, int y, int x)
 {
     if (checkInBound(map, y, x))
     {
-        return map->map[y][x] != wall;
+        return map->map[y][x] == air;
     }
     return FAIL;
 }

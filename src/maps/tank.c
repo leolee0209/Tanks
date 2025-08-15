@@ -20,19 +20,19 @@ void moveTank(Map *map, node *tank, char move)
     switch (move)
     {
     case 'w':
-        if (checkNoWall(map, y - 1, x))
+        if (checkEmpty(map, y - 1, x))
             putTank(map, tank, -1, 0);
         break;
     case 'a':
-        if (checkNoWall(map, y, x - 1))
+        if (checkEmpty(map, y, x - 1))
             putTank(map, tank, 0, -1);
         break;
     case 's':
-        if (checkNoWall(map, y + 1, x))
+        if (checkEmpty(map, y + 1, x))
             putTank(map, tank, +1, 0);
         break;
     case 'd':
-        if (checkNoWall(map, y, x + 1))
+        if (checkEmpty(map, y, x + 1))
             putTank(map, tank, 0, 1);
         break;
     }

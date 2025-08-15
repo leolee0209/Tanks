@@ -1,5 +1,6 @@
 typedef struct EnemyRule{
     int random;
+    int max;
 } EnemyRule;
 
 typedef struct Map
@@ -10,7 +11,7 @@ typedef struct Map
     EnemyRule enemyRule;
 } Map;
 
-int checkNoWall(Map *map, int y, int x);
+int checkEmpty(Map *map, int y, int x);
 int getMapFromFile(const char *fileName, Map *map);
 int checkInBound(Map *map, int y, int x);
 int getEmptyPos(Map *map, int **available);

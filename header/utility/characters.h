@@ -8,6 +8,6 @@ extern const char wall;
 extern const char tank;
 extern const char air;
 extern const char *maptxt;
-extern const char *enemytxt;
+extern const char *enemyjson;
 
 #endif // CHARACTERS_H
