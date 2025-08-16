@@ -1,12 +1,17 @@
+#ifndef _XOPEN_SOURCE_EXTENDED
+#define _XOPEN_SOURCE_EXTENDED
+#endif
 #include <mapUtility.h>
 #include <stdlib.h>
 #include <ncurses.h>
 #include "characters.h"
 #include <string.h>
 #include "cJSON.h"
+#include <stdio.h>
+#include <wchar.h>
 
 int loadMapFile(const char *mapFileName, Map *map);
-int loadEnemyFile(const char *enemyFileName, Map *map);
+int loadMapInfoFile(const char *enemyFileName, Map *map);
 int allocMap(Map *map, int h, int w);
 
 int allocMap(Map *map, int h, int w)
@@ -14,13 +19,13 @@ int allocMap(Map *map, int h, int w)
     if (!map)
         return FAIL;
 
-    if (!(map->map = malloc(h * sizeof(char *))))
+    if (!(map->map = malloc(h * sizeof(wchar_t *))))
     {
         return FAIL;
     }
     for (int i = 0; i < h; i++)
     {
-        if (!(map->map[i] = malloc(w * sizeof(char))))
+        if (!(map->map[i] = malloc(w * sizeof(wchar_t))))
         {
             return FAIL;
         }
@@ -29,76 +34,90 @@ int allocMap(Map *map, int h, int w)
 }
 int getMapFromFile(const char *fileName, Map *map)
 {
-    char *mapFileName, *enemyFileName;
-    if (!(mapFileName = calloc(strlen(fileName) + strlen(maptxt) + 1, sizeof(char))))
+    char *mapFileName, *mapInfoFileName;
+    if (!(mapInfoFileName = calloc(strlen(fileName) + strlen(mapinfojson) + 1, sizeof(char))))
+    {
         return FAIL;
+    }
+    strcat(mapInfoFileName, fileName);
+    strcat(mapInfoFileName, mapinfojson);
+
+    if (!(mapFileName = calloc(strlen(fileName) + strlen(maptxt) + 1, sizeof(char))))
+    {
+        free(mapInfoFileName);
+        return FAIL;
+    }
     strcat(mapFileName, fileName);
     strcat(mapFileName, maptxt);
 
-    if (!(enemyFileName = calloc(strlen(fileName) + strlen(enemyjson) + 1, sizeof(char))))
+    if (!loadMapInfoFile(mapInfoFileName, map))
     {
         free(mapFileName);
+        free(mapInfoFileName);
         return FAIL;
     }
-    strcat(enemyFileName, fileName);
-    strcat(enemyFileName, enemyjson);
-
     if (!loadMapFile(mapFileName, map))
     {
         free(mapFileName);
-        free(enemyFileName);
-        return FAIL;
-    }
-    if (!loadEnemyFile(enemyFileName, map))
-    {
-        free(mapFileName);
-        free(enemyFileName);
+        free(mapInfoFileName);
         return FAIL;
     }
 
+    free(mapInfoFileName);
     free(mapFileName);
-    free(enemyFileName);
     return SUCCESS;
 }
 
-int loadEnemyFile(const char *enemyFileName, Map *map)
+int loadMapInfoFile(const char *mapInfoFileName, Map *map)
 {
-    FILE *enemyFile = fopen(enemyFileName, "r");
-    if (!enemyFile || !map)
+    FILE *mapInfoFile = fopen(mapInfoFileName, "r");
+    if (!mapInfoFile || !map)
         return FAIL;
-
-    map->enemyRule.random = -1;
-    
 
     char str[1024];
     char rule[256];
     int value;
 
-    int len = fread(str, sizeof(char), 1024, enemyFile);
-    if(!feof(enemyFile)&&ferror(enemyFile)){
-        fclose(enemyFile);
+    int len = fread(str, sizeof(char), 1024, mapInfoFile);
+    if (!feof(mapInfoFile) && ferror(mapInfoFile))
+    {
+        fclose(mapInfoFile);
         return FAIL;
     }
-    cJSON *enemyJson = cJSON_ParseWithLength(str, len);
-    if (enemyJson == NULL)
+    cJSON *mapInfoJson = cJSON_ParseWithLength(str, len);
+    if (mapInfoJson == NULL)
     {
         const char *error_ptr = cJSON_GetErrorPtr();
         if (error_ptr != NULL)
         {
             fprintf(stderr, "Error before: %s\n", error_ptr);
         }
-        cJSON_Delete(enemyJson);
+        cJSON_Delete(mapInfoJson);
         return FAIL;
     }
 
-    cJSON *max = cJSON_GetObjectItemCaseSensitive(enemyJson, "max");
+    cJSON *enemy = cJSON_GetObjectItemCaseSensitive(mapInfoJson, "enemy");
+    cJSON *max = cJSON_GetObjectItemCaseSensitive(enemy, "max");
     map->enemyRule.max = cJSON_IsNumber(max) ? max->valueint : -1;
 
-    cJSON *random = cJSON_GetObjectItemCaseSensitive(enemyJson, "random");
+    cJSON *random = cJSON_GetObjectItemCaseSensitive(enemy, "random");
     map->enemyRule.random = cJSON_IsNumber(random) ? random->valueint : -1;
 
-    cJSON_Delete(enemyJson);
-    fclose(enemyFile);
+    cJSON *mapinfo = cJSON_GetObjectItemCaseSensitive(mapInfoJson, "map");
+    cJSON *height = cJSON_GetObjectItemCaseSensitive(mapinfo, "height");
+    if (cJSON_IsNumber(height))
+        map->height = height->valueint;
+    else
+        return FAIL;
+
+    cJSON *width = cJSON_GetObjectItemCaseSensitive(mapinfo, "width");
+    if (cJSON_IsNumber(width))
+        map->width = width->valueint;
+    else
+        return FAIL;
+
+    cJSON_Delete(mapInfoJson);
+    fclose(mapInfoFile);
     return SUCCESS;
 }
 
@@ -108,34 +127,28 @@ int loadMapFile(const char *mapFileName, Map *map)
     if (!mapFile || !map)
         return FAIL;
 
-    int h, w;
-    char str[256];
-    if (!fgets(str, 256, mapFile))
-        return FAIL;
-    sscanf(str, "%d,%d\n", &h, &w);
-    if (h <= 0 || w <= 0)
-        return FAIL;
-    map->height = h;
-    map->width = w;
-    if (!allocMap(map, h, w))
+    if (!allocMap(map, map->height, map->width))
     {
         return FAIL;
     }
 
-    char *temp = malloc(sizeof(char) * w);
+    wchar_t *temp = malloc(sizeof(wchar_t) * map->width);
 
     for (int i = 0; i < map->height; i++)
     {
-        fgets(temp, w + 2, mapFile);
-
-        for (int j = 0; j < w && temp[j] != '\n'; j++)
+        if (fgetws(temp, map->width + 2, mapFile) == NULL)
         {
-            if (temp[j] == tank)
+            int a = ferror(mapFile);
+            continue;
+        }
+        wcsncpy(map->map[i], temp, map->width);
+        for (int j = 0; j < map->width; j++)
+        {
+            if (map->map[i][j] == tank)
             {
                 map->inity = i;
                 map->initx = j;
             }
-            map->map[i][j] = temp[j];
         }
     }
 

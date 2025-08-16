@@ -1,10 +1,13 @@
 #ifndef CIRCLE_LIST_H
 #define CIRCLE_LIST_H
+#include <ncurses.h>
+#include <wchar.h>
+
 struct entity
 {
     int posx;
     int posy;
-    char character;
+    wchar_t character;
     char direction;
 };
 

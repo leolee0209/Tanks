@@ -1,3 +1,4 @@
+#include <wchar.h>
 typedef struct EnemyRule{
     int random;
     int max;
@@ -7,7 +8,7 @@ typedef struct Map
 {
     int height, width;
     int inity, initx;
-    char **map;
+    wchar_t **map;
     EnemyRule enemyRule;
 } Map;
 

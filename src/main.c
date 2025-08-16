@@ -1,3 +1,6 @@
+#ifndef _XOPEN_SOURCE_EXTENDED
+#define _XOPEN_SOURCE_EXTENDED
+#endif
 #include <stdlib.h>
 #include "map.h"
 #include <ncurses.h>
@@ -5,6 +8,7 @@
 #include <time.h>
 #include "circleList.h"
 #include <unistd.h>
+#include <locale.h>
 
 WINDOW *initCursesWindow();
 void getInput(int *input, char *move, WINDOW *win);
@@ -14,10 +18,12 @@ int framePerMove = 5;
 
 int main()
 {
+    setlocale(LC_ALL, "");
     initscr();
     srandom(time(NULL));
 
     WINDOW *win = initCursesWindow();
+
     Map map;
     if (!initMap(&map))
         return 0;
@@ -64,16 +70,16 @@ int main()
 WINDOW *initCursesWindow()
 {
     WINDOW *w = newwin(0, 0, 0, 0);
-    refresh();
-    nodelay(stdscr, true);
+    wrefresh(w);
+    nodelay(w, true);
     cbreak();
-    keypad(stdscr, true);
+    keypad(w, true);
     noecho();
     return w;
 }
 void getInput(int *input, char *move, WINDOW *win)
 {
-    *input = getch();
+    *input = wgetch(win);
     if (*input != ERR)
     {
         *move = *input;

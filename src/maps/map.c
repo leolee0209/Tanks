@@ -1,3 +1,6 @@
+#ifndef _XOPEN_SOURCE_EXTENDED
+#define _XOPEN_SOURCE_EXTENDED
+#endif
 #include "map.h"
 #include <ncurses.h>
 #include <stdlib.h>
@@ -52,14 +55,17 @@ void closeEntityList(struct node *start)
 
 void printMap(WINDOW *win, Map *map)
 {
+    wchar_t *temp = malloc(sizeof(wchar_t) * (map->width+2));
     for (int i = 0; i < map->height; i++)
     {
-        for (int j = 0; j < map->width; j++)
-        {
-            wprintw(win, "%c", map->map[i][j]);
-        }
-        wprintw(win, "\n");
+        for (int j = 0; j < map->width;j++)
+            temp[j] = map->map[i][j];
+        temp[map->width] = L'\n';
+        temp[map->width+1] = L'\0';
+        waddwstr(win, temp);
+        wrefresh(win);
     }
+    free(temp);
 }
 
 void spawnEnemy(Map *map, node *start, int counter)
@@ -86,7 +92,7 @@ void spawnEnemy(Map *map, node *start, int counter)
     node *new = malloc(sizeof(node));
     if (new)
     {
-        new->me = (struct entity){.character = 'e', .posy = p[0], .posx = p[1]};
+        new->me = (struct entity){.character = L'Ｅ', .posy = p[0], .posx = p[1]};
         append(start, new);
         map->map[new->me.posy][new->me.posx] = new->me.character;
     }

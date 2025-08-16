@@ -1,5 +1,7 @@
-const char wall = '#';
-const char tank = '@';
-const char air = ' ';
+#include <wchar.h>
+
+const wchar_t wall = L'＃';
+const wchar_t tank = L'＠';
+const wchar_t air = L'　';
 const char *maptxt = "map.txt";
-const char *enemyjson = "enemy.json";
+const char *mapinfojson = "mapinfo.json";
