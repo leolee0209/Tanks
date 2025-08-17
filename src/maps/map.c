@@ -10,7 +10,27 @@
 
 int initMap(Map *map)
 {
-    return getMapFromFile("/home/leo/Projects/Tanks/data/box/", map);
+    char *mapPath, *mapInfoPath;
+    if (!getFilePaths("/home/leo/Projects/Tanks/data/box/", &mapPath, &mapInfoPath))
+    {
+        return FAIL;
+    }
+    if (!loadMapInfo(mapInfoPath, map))
+    {
+        free(mapPath);
+        free(mapInfoPath);
+        return FAIL;
+    }
+    if (!loadMap(mapPath, map))
+    {
+        free(mapPath);
+        free(mapInfoPath);
+        return FAIL;
+    }
+
+    free(mapInfoPath);
+    free(mapPath);
+    return SUCCESS;
 }
 void closeMap(Map *map)
 {
@@ -55,13 +75,13 @@ void closeEntityList(struct node *start)
 
 void printMap(WINDOW *win, Map *map)
 {
-    wchar_t *temp = malloc(sizeof(wchar_t) * (map->width+2));
+    wchar_t *temp = malloc(sizeof(wchar_t) * (map->width + 2));
     for (int i = 0; i < map->height; i++)
     {
-        for (int j = 0; j < map->width;j++)
+        for (int j = 0; j < map->width; j++)
             temp[j] = map->map[i][j];
         temp[map->width] = L'\n';
-        temp[map->width+1] = L'\0';
+        temp[map->width + 1] = L'\0';
         waddwstr(win, temp);
         wrefresh(win);
     }
@@ -70,12 +90,12 @@ void printMap(WINDOW *win, Map *map)
 
 void spawnEnemy(Map *map, node *start, int counter)
 {
-    if (counter % map->enemyRule.random != 0)
+    if (map->enemyRule.random == -1 || counter % map->enemyRule.random != 0)
     {
         return;
     }
 
-    if (map->enemyRule.max != -1 && length(start) - 1 >= map->enemyRule.max)
+    if (map->enemyRule.max == -1 || length(start) - 1 >= map->enemyRule.max)
     {
         return;
     }

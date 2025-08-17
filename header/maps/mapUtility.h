@@ -13,6 +13,9 @@ typedef struct Map
 } Map;
 
 int checkEmpty(Map *map, int y, int x);
-int getMapFromFile(const char *fileName, Map *map);
+int getFilePaths(const char *dirPath, char **mapFileName, char **mapInfoFileName);
 int checkInBound(Map *map, int y, int x);
 int getEmptyPos(Map *map, int **available);
+int loadMap(const char *mapFileName, Map *map);
+int loadMapInfo(const char *enemyFileName, Map *map);
+int allocMap(Map *map, int h, int w);

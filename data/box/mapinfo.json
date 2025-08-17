@@ -1,6 +1,6 @@
 {
     "enemy": {
-        "random": 20,
+        "random": 0,
         "max": 10
     },
     "map":{

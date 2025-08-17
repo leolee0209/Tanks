@@ -10,10 +10,6 @@
 #include <stdio.h>
 #include <wchar.h>
 
-int loadMapFile(const char *mapFileName, Map *map);
-int loadMapInfoFile(const char *enemyFileName, Map *map);
-int allocMap(Map *map, int h, int w);
-
 int allocMap(Map *map, int h, int w)
 {
     if (!map)
@@ -32,43 +28,28 @@ int allocMap(Map *map, int h, int w)
     }
     return SUCCESS;
 }
-int getMapFromFile(const char *fileName, Map *map)
+int getFilePaths(const char *dirPath, char **mapFileName,char **mapInfoFileName)
 {
-    char *mapFileName, *mapInfoFileName;
-    if (!(mapInfoFileName = calloc(strlen(fileName) + strlen(mapinfojson) + 1, sizeof(char))))
+    
+    if (!(*mapInfoFileName = calloc(strlen(dirPath) + strlen(mapinfojson) + 1, sizeof(char))))
     {
         return FAIL;
     }
-    strcat(mapInfoFileName, fileName);
-    strcat(mapInfoFileName, mapinfojson);
+    strcat(*mapInfoFileName, dirPath);
+    strcat(*mapInfoFileName, mapinfojson);
 
-    if (!(mapFileName = calloc(strlen(fileName) + strlen(maptxt) + 1, sizeof(char))))
+    if (!(*mapFileName = calloc(strlen(dirPath) + strlen(maptxt) + 1, sizeof(char))))
     {
-        free(mapInfoFileName);
         return FAIL;
     }
-    strcat(mapFileName, fileName);
-    strcat(mapFileName, maptxt);
+    strcat(*mapFileName, dirPath);
+    strcat(*mapFileName, maptxt);
 
-    if (!loadMapInfoFile(mapInfoFileName, map))
-    {
-        free(mapFileName);
-        free(mapInfoFileName);
-        return FAIL;
-    }
-    if (!loadMapFile(mapFileName, map))
-    {
-        free(mapFileName);
-        free(mapInfoFileName);
-        return FAIL;
-    }
 
-    free(mapInfoFileName);
-    free(mapFileName);
     return SUCCESS;
 }
 
-int loadMapInfoFile(const char *mapInfoFileName, Map *map)
+int loadMapInfo(const char *mapInfoFileName, Map *map)
 {
     FILE *mapInfoFile = fopen(mapInfoFileName, "r");
     if (!mapInfoFile || !map)
@@ -101,7 +82,7 @@ int loadMapInfoFile(const char *mapInfoFileName, Map *map)
     map->enemyRule.max = cJSON_IsNumber(max) ? max->valueint : -1;
 
     cJSON *random = cJSON_GetObjectItemCaseSensitive(enemy, "random");
-    map->enemyRule.random = cJSON_IsNumber(random) ? random->valueint : -1;
+    map->enemyRule.random = cJSON_IsNumber(random) && random->valueint!=0 ? random->valueint : -1;
 
     cJSON *mapinfo = cJSON_GetObjectItemCaseSensitive(mapInfoJson, "map");
     cJSON *height = cJSON_GetObjectItemCaseSensitive(mapinfo, "height");
@@ -121,7 +102,7 @@ int loadMapInfoFile(const char *mapInfoFileName, Map *map)
     return SUCCESS;
 }
 
-int loadMapFile(const char *mapFileName, Map *map)
+int loadMap(const char *mapFileName, Map *map)
 {
     FILE *mapFile = fopen(mapFileName, "r");
     if (!mapFile || !map)
