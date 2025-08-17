@@ -9,11 +9,11 @@
 int initMap(Map* map);
 void closeMap(Map *map);
 
-int initEntityList(Map* map, node* start);
-void closeEntityList(node *start);
+int initEntityList(Map* map, clnode* start);
+void closeEntityList(clnode *start);
 
 void printMap(WINDOW* win, Map *map);
-void spawnEnemy(Map *map, node *start, int counter);
+void spawnEnemy(Map *map, clnode *start, int counter);
 
 
 #endif

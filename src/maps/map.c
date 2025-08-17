@@ -41,36 +41,28 @@ void closeMap(Map *map)
     free(map->map);
 }
 
-int initEntityList(Map *map, struct node *start)
+int initEntityList(Map *map, clnode *start)
 {
-    if (!start)
+    if (!clinit(start))
     {
         return FAIL;
     }
-    start->me.posy = map->inity;
-    start->me.posx = map->initx;
-    start->me.character = tank;
-    start->after = start;
-    start->before = start;
+    if(!(start->me = malloc(sizeof(entity)))){
+        return FAIL;
+    }
+    
+    entity *me = start->me;
+    me->posy = map->inity;
+    me->posx = map->initx;
+    me->character = tank;
     return SUCCESS;
 }
-void closeEntityList(struct node *start)
+void closeEntityList(clnode *start)
 {
-    if (start->after == start)
-    {
-        return;
+    for(cliterator i= clgetIter(start);i.now!=NULL;clnext(&i)){
+        free(i.now->me);
     }
-    struct node *n = start->after;
-    while (1)
-    {
-        if (n->after == start)
-        {
-            free(n);
-            return;
-        }
-        n = n->after;
-        free(n->before);
-    }
+    clfree(start);
 }
 
 void printMap(WINDOW *win, Map *map)
@@ -88,14 +80,15 @@ void printMap(WINDOW *win, Map *map)
     free(temp);
 }
 
-void spawnEnemy(Map *map, node *start, int counter)
+
+void spawnEnemy(Map *map, clnode *start, int counter)
 {
     if (map->enemyRule.random == -1 || counter % map->enemyRule.random != 0)
     {
         return;
     }
 
-    if (map->enemyRule.max == -1 || length(start) - 1 >= map->enemyRule.max)
+    if (map->enemyRule.max == -1 || cllength(start) - 1 >= map->enemyRule.max)
     {
         return;
     }
@@ -109,12 +102,14 @@ void spawnEnemy(Map *map, node *start, int counter)
 
     int *p = available[random() % avaiCount];
 
-    node *new = malloc(sizeof(node));
+    clnode *new = malloc(sizeof(clnode));
+    new->me = malloc(sizeof(entity));
+    entity *me = new->me;
     if (new)
     {
-        new->me = (struct entity){.character = L'Ｅ', .posy = p[0], .posx = p[1]};
-        append(start, new);
-        map->map[new->me.posy][new->me.posx] = new->me.character;
+        *(entity*)new->me = (entity){.character = L'Ｅ', .posy = p[0], .posx = p[1]};
+        clappend(start, new);
+        map->map[me->posy][me->posx] = me->character;
     }
 
     for (int i = 0; i < avaiCount; i++)

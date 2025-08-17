@@ -3,20 +3,20 @@
 #include "characters.h"
 #include <stdlib.h>
 
-void putTank(Map *map, node *tank, int ay, int ax)
+void putTank(Map *map, entity *tank, int ay, int ax)
 {
     if (!(ay == 0 && ax == 0))
     {
-        map->map[tank->me.posy][tank->me.posx] = air;
-        tank->me.posy += ay;
-        tank->me.posx += ax;
+        map->map[tank->posy][tank->posx] = air;
+        tank->posy += ay;
+        tank->posx += ax;
     }
-    map->map[tank->me.posy][tank->me.posx] = tank->me.character;
+    map->map[tank->posy][tank->posx] = tank->character;
 }
 
-void moveTank(Map *map, node *tank, char move)
+void moveTank(Map *map, entity *tank, char move)
 {
-    int x = tank->me.posx, y = tank->me.posy;
+    int x = tank->posx, y = tank->posy;
     switch (move)
     {
     case 'w':
@@ -38,38 +38,38 @@ void moveTank(Map *map, node *tank, char move)
     }
 }
 
-void moveEnemy(Map *map, node *start)
+void moveEnemy(Map *map, clnode *start)
 {
-    for (iterator i = getIterator(start); i.now != NULL; next(&i))
+    for (cliterator i = clgetIter(start); i.now != NULL; clnext(&i))
     {
         if (i.now == start)
         {
             continue;
         }
-        getAiDirection(map, i.now);
-        moveTank(map, i.now, i.now->me.direction);
+        getAiDirection(map, (entity*)(i.now->me));
+        moveTank(map, (entity*)(i.now->me), ((entity*)(i.now->me))->direction);
     }
 }
 
-char getAiDirection(Map *map, node *n)
+char getAiDirection(Map *map, entity *n)
 {
     int r = random() % 20;
     switch (r)
     {
     case 0:
-        n->me.direction = 'w';
+        n->direction = 'w';
         return 'w';
         break;
     case 1:
-        n->me.direction = 's';
+        n->direction = 's';
         return 's';
         break;
     case 2:
-        n->me.direction = 'a';
+        n->direction = 'a';
         return 'a';
         break;
     case 3:
-        n->me.direction = 'd';
+        n->direction = 'd';
         return 'd';
         break;
     }

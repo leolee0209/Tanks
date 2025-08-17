@@ -1,33 +1,28 @@
 #ifndef CIRCLE_LIST_H
 #define CIRCLE_LIST_H
-#include <ncurses.h>
-#include <wchar.h>
 
-struct entity
+#define NULL ((void *)0)
+#define SUCCESS 1
+#define FAIL 0
+
+typedef struct clnode
 {
-    int posx;
-    int posy;
-    wchar_t character;
-    char direction;
-};
+    struct clnode *before;
+    struct clnode *after;
+    void* me;
+}clnode;
 
-typedef struct node
-{
-    struct node *before;
-    struct node *after;
-    struct entity me;
-}node;
-
-typedef struct iterator{
-    node *start;
-    node *now;
-} iterator;
-
-int length(node *start);
-void append(node *start, node *a);
-void removeNode(node *r);
-node *get(node *start, int num);
-iterator getIterator(node *start);
-int next(iterator *i);
+typedef struct cliterator{
+    clnode *start;
+    clnode *now;
+} cliterator;
+int clinit(clnode *n);
+void clfree(clnode *n);
+int cllength(clnode *start);
+void clappend(clnode *start, clnode *a);
+void clremove(clnode *r);
+clnode *clget(clnode *start, int num);
+cliterator clgetIter(clnode *start);
+int clnext(cliterator *i);
 
 #endif

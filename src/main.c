@@ -9,6 +9,7 @@
 #include "circleList.h"
 #include <unistd.h>
 #include <locale.h>
+#include <characters.h>
 
 WINDOW *initCursesWindow();
 void getInput(int *input, char *move, WINDOW *win);
@@ -27,7 +28,7 @@ int main()
     Map map;
     if (!initMap(&map))
         return 0;
-    struct node start;
+    struct clnode start;
     if (!initEntityList(&map, &start))
         return 0;
 
@@ -42,7 +43,7 @@ int main()
         wclear(win);
         printMap(win, &map);
         
-        getInput(&input, &(start.me.direction), win);
+        getInput(&input, &(((entity*)(start.me))->direction), win);
         if (input == 'q')
         {
             wprintw(win, "Exiting the program.\n");
@@ -50,9 +51,10 @@ int main()
         }
 
         spawnEnemy(&map, &start, counter);
+        //spawnBullet()
         if (counter % framePerMove ==0)
         {
-            moveTank(&map, &start, start.me.direction);
+            moveTank(&map, (entity*)(start.me), ((entity*)(start.me))->direction);
             moveEnemy(&map, &start);
         }
 
