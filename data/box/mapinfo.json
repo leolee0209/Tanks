@@ -1,9 +1,18 @@
 {
+    "me":{
+        "speed":6,
+        "firerate": 20,
+        "bulletspeed": 3
+    },
     "enemy": {
-        "random": 0,
+        "speed":5,
+        "random": 10,
+        "firerate": 10,
+        "bulletspeed": 3,
         "max": 10
     },
     "map":{
+        "frameMicroSec":50000,
         "height":10,
         "width": 20
     }

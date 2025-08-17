@@ -4,7 +4,6 @@
 #include <mapUtility.h>
 #include <stdlib.h>
 #include <ncurses.h>
-#include "characters.h"
 #include <string.h>
 #include "cJSON.h"
 #include <stdio.h>
@@ -28,9 +27,34 @@ int allocMap(Map *map, int h, int w)
     }
     return SUCCESS;
 }
-int getFilePaths(const char *dirPath, char **mapFileName,char **mapInfoFileName)
+int *nextPos(Map *map, entity *e)
 {
-    
+    int *next = malloc(sizeof(int) * 2);
+    next[0] = e->posy;
+    next[1] = e->posx;
+    switch (e->direction)
+    {
+    case 'w':
+        next[0]--;
+        break;
+    case 's':
+        next[0]++;
+        break;
+    case 'a':
+        next[1]--;
+        break;
+    case 'd':
+        next[1]++;
+        break;
+
+    default:
+        return NULL;
+    }
+    return next;
+}
+int getFilePaths(const char *dirPath, char **mapFileName, char **mapInfoFileName)
+{
+
     if (!(*mapInfoFileName = calloc(strlen(dirPath) + strlen(mapinfojson) + 1, sizeof(char))))
     {
         return FAIL;
@@ -44,7 +68,6 @@ int getFilePaths(const char *dirPath, char **mapFileName,char **mapInfoFileName)
     }
     strcat(*mapFileName, dirPath);
     strcat(*mapFileName, maptxt);
-
 
     return SUCCESS;
 }
@@ -76,26 +99,41 @@ int loadMapInfo(const char *mapInfoFileName, Map *map)
         cJSON_Delete(mapInfoJson);
         return FAIL;
     }
-
+    // me
+    cJSON *me = cJSON_GetObjectItemCaseSensitive(mapInfoJson, "me");
+    cJSON *mespeed = cJSON_GetObjectItemCaseSensitive(me, "speed");
+    map->meRule.speed = cJSON_IsNumber(mespeed) && mespeed->valueint != 0 ? mespeed->valueint : -1;
+    cJSON *mebulletspeed = cJSON_GetObjectItemCaseSensitive(me, "bulletspeed");
+    map->meRule.bulletspeed = cJSON_IsNumber(mebulletspeed) && mebulletspeed->valueint != 0 ? mebulletspeed->valueint : -1;
+    cJSON *firerate = cJSON_GetObjectItemCaseSensitive(me, "firerate");
+    map->meRule.firerate = cJSON_IsNumber(firerate) && firerate->valueint != 0 ? firerate->valueint : -1;
+    // enemy
     cJSON *enemy = cJSON_GetObjectItemCaseSensitive(mapInfoJson, "enemy");
+    cJSON *enemyspeed = cJSON_GetObjectItemCaseSensitive(enemy, "speed");
+    map->enemyRule.speed = cJSON_IsNumber(enemyspeed) && enemyspeed->valueint != 0 ? enemyspeed->valueint : -1;
     cJSON *max = cJSON_GetObjectItemCaseSensitive(enemy, "max");
     map->enemyRule.max = cJSON_IsNumber(max) ? max->valueint : -1;
-
+    cJSON *enemyBulletSpeed = cJSON_GetObjectItemCaseSensitive(enemy, "bulletspeed");
+    map->enemyRule.bulletspeed = cJSON_IsNumber(enemyBulletSpeed) && enemyBulletSpeed->valueint != 0 ? enemyBulletSpeed->valueint : -1;
     cJSON *random = cJSON_GetObjectItemCaseSensitive(enemy, "random");
-    map->enemyRule.random = cJSON_IsNumber(random) && random->valueint!=0 ? random->valueint : -1;
-
+    map->enemyRule.random = cJSON_IsNumber(random) && random->valueint != 0 ? random->valueint : -1;
+    // map
     cJSON *mapinfo = cJSON_GetObjectItemCaseSensitive(mapInfoJson, "map");
     cJSON *height = cJSON_GetObjectItemCaseSensitive(mapinfo, "height");
     if (cJSON_IsNumber(height))
         map->height = height->valueint;
     else
         return FAIL;
-
     cJSON *width = cJSON_GetObjectItemCaseSensitive(mapinfo, "width");
     if (cJSON_IsNumber(width))
         map->width = width->valueint;
     else
         return FAIL;
+    cJSON *frameMicroSec = cJSON_GetObjectItemCaseSensitive(mapinfo, "frameMicroSec");
+    if (cJSON_IsNumber(frameMicroSec))
+        map->frameMicroSec = frameMicroSec->valueint;
+    else
+        map->frameMicroSec = 50000;
 
     cJSON_Delete(mapInfoJson);
     fclose(mapInfoFile);

@@ -38,17 +38,59 @@ void moveTank(Map *map, entity *tank, char move)
     }
 }
 
-void moveEnemy(Map *map, clnode *start)
+void moveEnemy(Map *map, cllist *enemies, int count)
 {
-    for (cliterator i = clgetIter(start); i.now != NULL; clnext(&i))
+    if (enemies->start == NULL)
+        return;
+    if (map->enemyRule.speed == -1 || count % map->enemyRule.speed != 0)
+        return;
+    for (cliterator i = clgetIter(enemies); i.now != NULL; clnext(&i))
     {
-        if (i.now == start)
+        getAiDirection(map, (entity *)(i.now->me));
+        moveTank(map, (entity *)(i.now->me), ((entity *)(i.now->me))->direction);
+    }
+}
+void moveMe(Map *map, entity *me, int count)
+{
+    if (map->meRule.speed == -1 || count % map->meRule.speed != 0)
+        return;
+    moveTank(map, me, me->direction);
+}
+
+void moveBullets(Map *map, cllist *bullets, int count)
+{
+    if (bullets->start == NULL)
+        return;
+    if (map->meRule.bulletspeed == -1 || count % map->meRule.bulletspeed != 0)
+        return;
+
+    entity *e = NULL;
+    cllist *toRemove = clinit();
+    int *n = NULL;
+    for (cliterator i = clgetIter(bullets); i.now != NULL; clnext(&i))
+    {
+        e = (entity *)(i.now->me);
+        if ((n = nextPos(map, e)) && !checkEmpty(map, n[0], n[1]))
         {
+            clappend(toRemove, newnode(i.now));
             continue;
         }
-        getAiDirection(map, (entity*)(i.now->me));
-        moveTank(map, (entity*)(i.now->me), ((entity*)(i.now->me))->direction);
+        moveTank(map, e, e->direction);
     }
+    free(n);
+
+    clnode *nodeToR = NULL;
+    entity *entityToR = NULL;
+    for (cliterator i = clgetIter(toRemove); i.now != NULL; clnext(&i))
+    {
+        nodeToR = (clnode *)(i.now->me);
+        entityToR = (entity *)(nodeToR->me);
+        map->map[entityToR->posy][entityToR->posx] = air;
+        clremove(bullets, nodeToR);
+        free(nodeToR->me);
+        free(nodeToR);
+    }
+    clfree(toRemove);
 }
 
 char getAiDirection(Map *map, entity *n)

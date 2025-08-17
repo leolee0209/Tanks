@@ -14,9 +14,6 @@
 WINDOW *initCursesWindow();
 void getInput(int *input, char *move, WINDOW *win);
 
-int frameMicroSec = 50000;
-int framePerMove = 5;
-
 int main()
 {
     setlocale(LC_ALL, "");
@@ -28,10 +25,9 @@ int main()
     Map map;
     if (!initMap(&map))
         return 0;
-    struct clnode start;
-    if (!initEntityList(&map, &start))
-        return 0;
-
+    entity me = {.posy = map.inity, .posx = map.initx, .character = tank, .direction = 'n'};
+    cllist *bullets = clinit();
+    cllist *enemies = clinit();
 
     int input = 0;
     clock_t t;
@@ -42,29 +38,31 @@ int main()
 
         wclear(win);
         printMap(win, &map);
-        
-        getInput(&input, &(((entity*)(start.me))->direction), win);
+
+        getInput(&input, &me.direction, win);
         if (input == 'q')
         {
             wprintw(win, "Exiting the program.\n");
             break;
         }
 
-        spawnEnemy(&map, &start, counter);
-        //spawnBullet()
-        if (counter % framePerMove ==0)
-        {
-            moveTank(&map, (entity*)(start.me), ((entity*)(start.me))->direction);
-            moveEnemy(&map, &start);
-        }
+        spawnEnemy(&map, enemies, counter);
+        spawnBullet(&map,&me, bullets, bullets, counter);
+
+        moveMe(&map, &me, counter);
+        moveEnemy(&map, enemies, counter);
+        moveBullets(&map, bullets, counter);
 
         counter++;
         t = clock() - t;
-        usleep(frameMicroSec - 1000000 * t / CLOCKS_PER_SEC);
+        if(map.frameMicroSec - 1000000 * t / CLOCKS_PER_SEC<=0){
+            continue;
+        }
+        usleep(map.frameMicroSec - 1000000 * t / CLOCKS_PER_SEC);
     }
 
     closeMap(&map);
-    closeEntityList(&start);
+    closeEntityList(enemies);
     endwin();
     return 0;
 }

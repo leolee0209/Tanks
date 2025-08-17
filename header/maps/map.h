@@ -5,15 +5,11 @@
 #include "circleList.h"
 #include "mapUtility.h"
 
-
 int initMap(Map* map);
 void closeMap(Map *map);
-
-int initEntityList(Map* map, clnode* start);
-void closeEntityList(clnode *start);
-
+void closeEntityList(cllist *start);
 void printMap(WINDOW* win, Map *map);
-void spawnEnemy(Map *map, clnode *start, int counter);
-
+void spawnEnemy(Map *map, cllist *enemies, int counter);
+void spawnBullet(Map *map,entity* me, cllist *enemies,cllist* bullets, int counter);
 
 #endif

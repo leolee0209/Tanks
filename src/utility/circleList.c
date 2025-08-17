@@ -1,12 +1,13 @@
 #include "circleList.h"
 #include <stdlib.h>
 
-struct clnode *clget(struct clnode *start, int num)
+struct clnode *clget(cllist *l, int num)
 {
+    if (l == NULL)
+        return 0;
+    clnode *start = l->start;
     if (!start)
-    {
         return NULL;
-    }
     for (int i = 0; i < num; i++)
     {
         if (!start->after)
@@ -17,15 +18,15 @@ struct clnode *clget(struct clnode *start, int num)
     }
     return start;
 }
-cliterator clgetIter(clnode *start)
+cliterator clgetIter(cllist *l)
 {
-    return (cliterator){.start = start, .now = start};
+    return (cliterator){.start = l->start, .now = l->start};
 }
 int clnext(cliterator *i)
 {
-    if(!i)
+    if (!i)
         return FAIL;
-    
+
     if (i->now->after == i->start)
     {
         i->now = NULL;
@@ -34,63 +35,102 @@ int clnext(cliterator *i)
     i->now = i->now->after;
     return SUCCESS;
 }
-void clappend(struct clnode *start, struct clnode *a)
+void clappend(cllist *l, clnode *a)
 {
-    struct clnode *last = start->before;
+    if (l == NULL)
+        return;
+    if (l->start == NULL)
+    {
+        l->start = a;
+        a->after = a;
+        a->before = a;
+        return;
+    }
+    clnode *last = l->start->before;
     last->after = a;
-    start->before = a;
-    a->after = start;
+    l->start->before = a;
+    a->after = l->start;
     a->before = last;
 }
-void clremove(struct clnode *r)
+void clremove(cllist *l, clnode *r)
 {
-    if (r->before && r->after)
+    if (!l || !r)
+        return;
+    if (l->start == r)
     {
-        r->before->after = r->after;
-        r->after->before = r->before;
+        if(r->after==r){
+            l->start = NULL;
+            return;
+        }
+        clnode *before = r->before;
+        clnode *after = r->after;
+        before->after = after;
+        after->before = before;
+        l->start = after;
+        return;
     }
+
+    clnode *before = r->before;
+    clnode *after = r->after;
+    before->after = after;
+    after->before = before;
 }
-int cllength(clnode *start)
+int cllength(cllist *l)
 {
+    if (l == NULL)
+        return FAIL;
+    if (l->start == NULL)
+        return 0;
     int num = 0;
-    if (!start->after)
-    {
-        return 1;
-    }
-    clnode *p = start;
+    clnode *p = l->start;
     do
     {
         p = p->after;
         num++;
-    } while (p != start);
+    } while (p != l->start);
     return num;
 }
-int clinit(clnode *n)
+cllist *clinit()
 {
-    if (!n)
-    {
-        return FAIL;
-    }
-    n->after = n;
-    n->before = n;
-    return SUCCESS;
+    cllist *n = malloc(sizeof(cllist));
+    n->start = NULL;
+    return n;
 }
 
-void clfree(clnode *n)
+clnode *newnode(void *m)
 {
-    if(!n)
+    clnode *n = malloc(sizeof(clnode));
+    n->after = NULL;
+    n->before = NULL;
+    n->me = m;
+    return n;
+}
+
+void clfree(cllist *l)
+{
+    if (!l)
         return;
-    if(n->after==n){
+    if (!l->start)
+    {
+        free(l);
         return;
     }
-    clnode *last = n->before;
-    for (cliterator i = clgetIter(n); i.now != NULL;)
+    if (l->start == l->start->after)
+    {
+        free(l->start);
+        free(l);
+        return;
+    }
+    clnode *last = l->start->before;
+    for (cliterator i = clgetIter(l); i.now != NULL;)
     {
         clnext(&i);
         free(i.now->before);
-        if(i.now==last){
+        if (i.now == last)
+        {
             free(i.now);
             break;
         }
     }
+    free(l);
 }

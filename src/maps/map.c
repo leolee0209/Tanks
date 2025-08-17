@@ -41,28 +41,13 @@ void closeMap(Map *map)
     free(map->map);
 }
 
-int initEntityList(Map *map, clnode *start)
+void closeEntityList(cllist *l)
 {
-    if (!clinit(start))
+    for (cliterator i = clgetIter(l); i.now != NULL; clnext(&i))
     {
-        return FAIL;
-    }
-    if(!(start->me = malloc(sizeof(entity)))){
-        return FAIL;
-    }
-    
-    entity *me = start->me;
-    me->posy = map->inity;
-    me->posx = map->initx;
-    me->character = tank;
-    return SUCCESS;
-}
-void closeEntityList(clnode *start)
-{
-    for(cliterator i= clgetIter(start);i.now!=NULL;clnext(&i)){
         free(i.now->me);
     }
-    clfree(start);
+    clfree(l);
 }
 
 void printMap(WINDOW *win, Map *map)
@@ -80,15 +65,14 @@ void printMap(WINDOW *win, Map *map)
     free(temp);
 }
 
-
-void spawnEnemy(Map *map, clnode *start, int counter)
+void spawnEnemy(Map *map, cllist *enemies, int counter)
 {
     if (map->enemyRule.random == -1 || counter % map->enemyRule.random != 0)
     {
         return;
     }
 
-    if (map->enemyRule.max == -1 || cllength(start) - 1 >= map->enemyRule.max)
+    if (map->enemyRule.max == -1 || cllength(enemies) - 1 >= map->enemyRule.max)
     {
         return;
     }
@@ -107,8 +91,8 @@ void spawnEnemy(Map *map, clnode *start, int counter)
     entity *me = new->me;
     if (new)
     {
-        *(entity*)new->me = (entity){.character = L'Ｅ', .posy = p[0], .posx = p[1]};
-        clappend(start, new);
+        *(entity *)new->me = (entity){.character = L'Ｅ', .posy = p[0], .posx = p[1]};
+        clappend(enemies, new);
         map->map[me->posy][me->posx] = me->character;
     }
 
@@ -117,4 +101,28 @@ void spawnEnemy(Map *map, clnode *start, int counter)
         free(available[i]);
     }
     free(available);
+}
+
+void spawnBullet(Map *map, entity *me, cllist *start, cllist *bullets, int counter)
+{
+    if (map->meRule.firerate == -1 || counter % map->meRule.firerate != 0)
+    {
+        return;
+    }
+    int *n = nextPos(map, me);
+    if(!n)
+        return;
+    if (checkEmpty(map, n[0], n[1]))
+    {
+        if (bullets == NULL && !(bullets = clinit()))
+        {
+            return;
+        }
+        entity *newBullet = malloc(sizeof(entity));
+        *newBullet = (entity){.character = L'。', .direction = me->direction, .posy = n[0], .posx = n[1]};
+
+        clappend(bullets, newnode(newBullet));
+        map->map[n[0]][n[1]] = L'。';
+    }
+    free(n);
 }

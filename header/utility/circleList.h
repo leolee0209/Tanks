@@ -5,6 +5,10 @@
 #define SUCCESS 1
 #define FAIL 0
 
+typedef struct cllist{
+    struct clnode *start;
+} cllist;
+
 typedef struct clnode
 {
     struct clnode *before;
@@ -16,13 +20,15 @@ typedef struct cliterator{
     clnode *start;
     clnode *now;
 } cliterator;
-int clinit(clnode *n);
-void clfree(clnode *n);
-int cllength(clnode *start);
-void clappend(clnode *start, clnode *a);
-void clremove(clnode *r);
-clnode *clget(clnode *start, int num);
-cliterator clgetIter(clnode *start);
+
+cllist * clinit();
+clnode *newnode(void *me);
+void clfree(cllist *n);
+int cllength(cllist *l);
+void clappend(cllist *l, clnode *a);
+void clremove(cllist *l, clnode *r);
+clnode *clget(cllist *l, int num);
+cliterator clgetIter(cllist *l);
 int clnext(cliterator *i);
 
 #endif
