@@ -20,35 +20,82 @@ void moveTank(Map *map, entity *tank, char move)
     switch (move)
     {
     case 'w':
-        if (checkEmpty(map, y - 1, x))
+        if (isEmpty(map, y - 1, x))
             putTank(map, tank, -1, 0);
         break;
     case 'a':
-        if (checkEmpty(map, y, x - 1))
+        if (isEmpty(map, y, x - 1))
             putTank(map, tank, 0, -1);
         break;
     case 's':
-        if (checkEmpty(map, y + 1, x))
+        if (isEmpty(map, y + 1, x))
             putTank(map, tank, +1, 0);
         break;
     case 'd':
-        if (checkEmpty(map, y, x + 1))
+        if (isEmpty(map, y, x + 1))
             putTank(map, tank, 0, 1);
         break;
     }
 }
 
-void moveEnemy(Map *map, cllist *enemies, int count)
+void moveEnemy(Map *map, cllist *enemies, cllist *bullets, int count)
 {
     if (enemies->start == NULL)
         return;
     if (map->enemyRule.speed == -1 || count % map->enemyRule.speed != 0)
         return;
+
+    cllist *toRemove = clinit();
+    int *n;
     for (cliterator i = clgetIter(enemies); i.now != NULL; clnext(&i))
     {
-        getAiDirection(map, (entity *)(i.now->me));
-        moveTank(map, (entity *)(i.now->me), ((entity *)(i.now->me))->direction);
+        entity *e = i.now->me;
+
+        if (!(n = nextPos(map, e)))
+        {
+            getAiDirection(map, e);
+        }
+        else if (!inBound(map, n[0], n[1]))
+        {
+            clappend(toRemove, newnode(i.now));
+        }
+        else if (isAir(map, n[0], n[1]))
+        {
+            getAiDirection(map, e);
+            moveTank(map, e, e->direction);
+        }
+        else if (isWall(map, n[0], n[1]) || isEnemy(map, n[0], n[1]))
+        {
+            getAiDirection(map, e);
+        }
+        else if (isBullet(map, n[0], n[1]))
+        {
+            clappend(toRemove, newnode(i.now));
+            clnode *r = getBullet(bullets, n[0], n[1]);
+            if (r)
+            {
+                entity *re = r->me;
+                map->map[re->posy][re->posx] = map->air;
+                clremove(bullets, r);
+                free(re);
+                free(r);
+            }
+        }
     }
+    free(n);
+
+    clnode *nodeToR = NULL;
+    entity *entityToR = NULL;
+    for (cliterator i = clgetIter(toRemove); i.now != NULL; clnext(&i))
+    {
+        nodeToR = (clnode *)(i.now->me);
+        entityToR = (entity *)(nodeToR->me);
+        map->map[entityToR->posy][entityToR->posx] = map->air;
+        clremove(enemies, nodeToR);
+        free(nodeToR->me);
+        free(nodeToR);
+    }
+    clfree(toRemove);
 }
 void moveMe(Map *map, entity *me, int count)
 {
@@ -57,7 +104,7 @@ void moveMe(Map *map, entity *me, int count)
     moveTank(map, me, me->direction);
 }
 
-void moveBullets(Map *map, cllist *bullets, int count)
+void moveBullets(Map *map, cllist *bullets, cllist *enemies, int count)
 {
     if (bullets->start == NULL)
         return;
@@ -70,12 +117,37 @@ void moveBullets(Map *map, cllist *bullets, int count)
     for (cliterator i = clgetIter(bullets); i.now != NULL; clnext(&i))
     {
         e = (entity *)(i.now->me);
-        if ((n = nextPos(map, e)) && !checkEmpty(map, n[0], n[1]))
+        if (n = nextPos(map, e))
         {
-            clappend(toRemove, newnode(i.now));
-            continue;
+            if (!inBound(map, n[0], n[1]))
+            {
+                clappend(toRemove, newnode(i.now));
+                continue;
+            }
+            if (!isAir(map, n[0], n[1]))
+            {
+                if (isWall(map, n[0], n[1]))
+                {
+                    clappend(toRemove, newnode(i.now));
+                    continue;
+                }
+                if (isEnemy(map, n[0], n[1]))
+                {
+                    clappend(toRemove, newnode(i.now));
+                    clnode *r = getEnemy(enemies, n[0], n[1]);
+                    if (r)
+                    {
+                        entity *re = r->me;
+                        map->map[re->posy][re->posx] = map->air;
+                        clremove(enemies, r);
+                        free(re);
+                        free(r);
+                    }
+                    continue;
+                }
+            }
+            moveTank(map, e, e->direction);
         }
-        moveTank(map, e, e->direction);
     }
     free(n);
 

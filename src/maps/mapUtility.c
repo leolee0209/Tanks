@@ -2,6 +2,7 @@
 #define _XOPEN_SOURCE_EXTENDED
 #endif
 #include <mapUtility.h>
+#include "LLog.hpp"
 #include <stdlib.h>
 #include <ncurses.h>
 #include <string.h>
@@ -52,11 +53,46 @@ int *nextPos(Map *map, entity *e)
     }
     return next;
 }
+int isEnemy(Map *map, int y, int x)
+{
+    return map->map[y][x] == map->enemyRule.character;
+}
+int isWall(Map *map, int y, int x)
+{
+    return map->map[y][x] == map->wall;
+}
+clnode *getEnemy(cllist *enemies, int y, int x)
+{
+    entity *e;
+    for (cliterator i = clgetIter(enemies); i.now != NULL; clnext(&i))
+    {
+        e = i.now->me;
+        if (e->posy == y && e->posx == x)
+        {
+            return i.now;
+        }
+    }
+    return NULL;
+}
+clnode *getBullet(cllist *bullets, int y, int x)
+{
+    entity *e;
+    for (cliterator i = clgetIter(bullets); i.now != NULL; clnext(&i))
+    {
+        e = i.now->me;
+        if (e->posy == y && e->posx == x)
+        {
+            return i.now;
+        }
+    }
+    return NULL;
+}
 int getFilePaths(const char *dirPath, char **mapFileName, char **mapInfoFileName)
 {
 
     if (!(*mapInfoFileName = calloc(strlen(dirPath) + strlen(mapinfojson) + 1, sizeof(char))))
     {
+        ERROR("calloc failed.\n");
         return FAIL;
     }
     strcat(*mapInfoFileName, dirPath);
@@ -64,6 +100,7 @@ int getFilePaths(const char *dirPath, char **mapFileName, char **mapInfoFileName
 
     if (!(*mapFileName = calloc(strlen(dirPath) + strlen(maptxt) + 1, sizeof(char))))
     {
+        ERROR("calloc failed.\n");
         return FAIL;
     }
     strcat(*mapFileName, dirPath);
@@ -75,8 +112,10 @@ int getFilePaths(const char *dirPath, char **mapFileName, char **mapInfoFileName
 int loadMapInfo(const char *mapInfoFileName, Map *map)
 {
     FILE *mapInfoFile = fopen(mapInfoFileName, "r");
-    if (!mapInfoFile || !map)
+    if (!mapInfoFile || !map){
+        ERROR("FILEIO.\n");
         return FAIL;
+    }
 
     char str[1024];
     char rule[256];
@@ -85,6 +124,7 @@ int loadMapInfo(const char *mapInfoFileName, Map *map)
     int len = fread(str, sizeof(char), 1024, mapInfoFile);
     if (!feof(mapInfoFile) && ferror(mapInfoFile))
     {
+        ERROR("FILEIO.\n");
         fclose(mapInfoFile);
         return FAIL;
     }
@@ -94,7 +134,7 @@ int loadMapInfo(const char *mapInfoFileName, Map *map)
         const char *error_ptr = cJSON_GetErrorPtr();
         if (error_ptr != NULL)
         {
-            fprintf(stderr, "Error before: %s\n", error_ptr);
+            ERROR(error_ptr);
         }
         cJSON_Delete(mapInfoJson);
         return FAIL;
@@ -207,6 +247,15 @@ int loadMap(const char *mapFileName, Map *map)
     return SUCCESS;
 }
 
+int isEmpty(Map* map, int y, int x){
+    return inBound(map, y, x) && isAir(map, y, x);
+}
+
+int isBullet(Map *map, int y, int x)
+{
+    return map->map[y][x] == map->meRule.bulletcharacter || map->map[y][x] == map->enemyRule.bulletcharacter;
+}
+
 int getEmptyPos(Map *map, int **available)
 {
     if (!available)
@@ -233,16 +282,12 @@ int getEmptyPos(Map *map, int **available)
     return avaiCount;
 }
 
-int checkEmpty(Map *map, int y, int x)
+int isAir(Map *map, int y, int x)
 {
-    if (checkInBound(map, y, x))
-    {
-        return map->map[y][x] == map->air;
-    }
-    return FAIL;
+    return map->map[y][x] == map->air;
 }
 
-int checkInBound(Map *map, int y, int x)
+int inBound(Map *map, int y, int x)
 {
     if (y >= 0 && y < map->height && x >= 0 && x < map->width)
     {

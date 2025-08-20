@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <locale.h>
 #include <characters.h>
+#include "LLog.hpp"
 
 WINDOW *initCursesWindow();
 void getInput(int *input, char *move, WINDOW *win);
@@ -20,6 +21,7 @@ int main()
     initscr();
     srandom(time(NULL));
 
+    LoggerInit("~/Projects/Tanks/log.txt", 1);
     WINDOW *win = initCursesWindow();
 
     Map map;
@@ -57,8 +59,8 @@ int main()
         spawnBullet(&map, &me, bullets, bullets, counter);
 
         moveMe(&map, &me, counter);
-        moveEnemy(&map, enemies, counter);
-        moveBullets(&map, bullets, counter);
+        moveEnemy(&map, enemies,bullets, counter);
+        moveBullets(&map, bullets,enemies, counter);
 
         counter++;
         if (!debugMode)

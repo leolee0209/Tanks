@@ -1,5 +1,6 @@
 #include <wchar.h>
 #include "characters.h"
+#include "circleList.h"
 typedef struct EnemyRule
 {
     int random;
@@ -32,11 +33,17 @@ typedef struct Map
     wchar_t wall;
 } Map;
 
-int checkEmpty(Map *map, int y, int x);
+int isAir(Map *map, int y, int x);
 int getFilePaths(const char *dirPath, char **mapFileName, char **mapInfoFileName);
-int checkInBound(Map *map, int y, int x);
+int inBound(Map *map, int y, int x);
 int getEmptyPos(Map *map, int **available);
 int loadMap(const char *mapFileName, Map *map);
 int loadMapInfo(const char *enemyFileName, Map *map);
 int allocMap(Map *map, int h, int w);
 int *nextPos(Map *map, entity *e);
+int isEnemy(Map *map, int y, int x);
+int isWall(Map *map, int y, int x);
+clnode *getEnemy(cllist *enemies, int y, int x);
+clnode *getBullet(cllist *bullets, int y, int x);
+int isEmpty(Map *map, int y, int x);
+int isBullet(Map *map, int y, int x);

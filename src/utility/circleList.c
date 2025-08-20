@@ -26,7 +26,10 @@ int clnext(cliterator *i)
 {
     if (!i)
         return FAIL;
-
+    if(i->start==NULL){
+        i->now = NULL;
+        return FAIL;
+    }
     if (i->now->after == i->start)
     {
         i->now = NULL;

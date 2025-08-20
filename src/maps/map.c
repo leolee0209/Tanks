@@ -72,7 +72,7 @@ void spawnEnemy(Map *map, cllist *enemies, int counter)
         return;
     }
 
-    if (map->enemyRule.max == -1 || cllength(enemies) - 1 >= map->enemyRule.max)
+    if (map->enemyRule.max == -1 || cllength(enemies) >= map->enemyRule.max)
     {
         return;
     }
@@ -85,16 +85,10 @@ void spawnEnemy(Map *map, cllist *enemies, int counter)
     }
 
     int *p = available[random() % avaiCount];
-
-    clnode *new = malloc(sizeof(clnode));
-    new->me = malloc(sizeof(entity));
-    entity *me = new->me;
-    if (new)
-    {
-        *(entity *)new->me = (entity){.character = map->enemyRule.character, .posy = p[0], .posx = p[1]};
-        clappend(enemies, new);
-        map->map[me->posy][me->posx] = me->character;
-    }
+    entity *me = malloc(sizeof(entity));
+    *me = (entity){.character = map->enemyRule.character, .posy = p[0], .posx = p[1]};
+    clappend(enemies, newnode(me));
+    map->map[me->posy][me->posx] = me->character;
 
     for (int i = 0; i < avaiCount; i++)
     {
@@ -103,20 +97,28 @@ void spawnEnemy(Map *map, cllist *enemies, int counter)
     free(available);
 }
 
-void spawnBullet(Map *map, entity *me, cllist *start, cllist *bullets, int counter)
+void spawnBullet(Map *map, entity *me, cllist *enemies, cllist *bullets, int counter)
 {
     if (map->meRule.firerate == -1 || counter % map->meRule.firerate != 0)
     {
         return;
     }
     int *n = nextPos(map, me);
-    if(!n)
+    if (!n)
         return;
-    if (checkEmpty(map, n[0], n[1]))
+    if (inBound(map, n[0], n[1]) && !isWall(map, n[0], n[1]))
     {
-        if (bullets == NULL && !(bullets = clinit()))
+        if (isEnemy(map, n[0], n[1]))
         {
-            return;
+            clnode *r = getEnemy(enemies, n[0], n[1]);
+            if (r)
+            {
+                entity *re = r->me;
+                map->map[re->posy][re->posx] = map->air;
+                clremove(enemies, r);
+                free(re);
+                free(r);
+            }
         }
         entity *newBullet = malloc(sizeof(entity));
         *newBullet = (entity){.character = map->meRule.bulletcharacter, .direction = me->direction, .posy = n[0], .posx = n[1]};
