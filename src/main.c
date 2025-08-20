@@ -59,8 +59,8 @@ int main()
         spawnBullet(&map, &me, bullets, bullets, counter);
 
         moveMe(&map, &me, counter);
-        moveEnemy(&map, enemies,bullets, counter);
-        moveBullets(&map, bullets,enemies, counter);
+        moveEnemy(&map, enemies, bullets, counter);
+        moveBullets(&map, bullets, enemies, counter);
 
         counter++;
         if (!debugMode)

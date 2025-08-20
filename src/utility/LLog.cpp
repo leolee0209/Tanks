@@ -23,7 +23,7 @@ void logging(string level, string s, int line, const char *file, bool stacktrace
 {
     auto t = time(nullptr);
     tm tm;
-    localtime_r(&t,&tm);
+    localtime_r(&t, &tm);
 
     ostringstream oss;
     oss << put_time(&tm, "%m/%d %Y %H-%M-%S");
@@ -105,7 +105,7 @@ void warn(const char *file, int line, char *s, bool stacktrace)
     logWrapper(" WARNING: ", string(s), line, file, stacktrace);
 }
 
-void LoggerInit(char* path, bool cut)
+void LoggerInit(char *path, bool cut)
 {
     // name is initialized to "", cut is initialized to true
     cutFileName = cut;

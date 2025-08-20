@@ -26,7 +26,8 @@ int clnext(cliterator *i)
 {
     if (!i)
         return FAIL;
-    if(i->start==NULL){
+    if (i->start == NULL)
+    {
         i->now = NULL;
         return FAIL;
     }
@@ -61,7 +62,8 @@ void clremove(cllist *l, clnode *r)
         return;
     if (l->start == r)
     {
-        if(r->after==r){
+        if (r->after == r)
+        {
             l->start = NULL;
             return;
         }

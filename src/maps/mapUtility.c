@@ -112,7 +112,8 @@ int getFilePaths(const char *dirPath, char **mapFileName, char **mapInfoFileName
 int loadMapInfo(const char *mapInfoFileName, Map *map)
 {
     FILE *mapInfoFile = fopen(mapInfoFileName, "r");
-    if (!mapInfoFile || !map){
+    if (!mapInfoFile || !map)
+    {
         ERROR("FILEIO.\n");
         return FAIL;
     }
@@ -247,7 +248,8 @@ int loadMap(const char *mapFileName, Map *map)
     return SUCCESS;
 }
 
-int isEmpty(Map* map, int y, int x){
+int isEmpty(Map *map, int y, int x)
+{
     return inBound(map, y, x) && isAir(map, y, x);
 }
 
