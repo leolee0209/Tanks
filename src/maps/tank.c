@@ -7,7 +7,7 @@ void putTank(Map *map, entity *tank, int ay, int ax)
 {
     if (!(ay == 0 && ax == 0))
     {
-        map->map[tank->posy][tank->posx] = air;
+        map->map[tank->posy][tank->posx] = map->air;
         tank->posy += ay;
         tank->posx += ax;
     }
@@ -85,7 +85,7 @@ void moveBullets(Map *map, cllist *bullets, int count)
     {
         nodeToR = (clnode *)(i.now->me);
         entityToR = (entity *)(nodeToR->me);
-        map->map[entityToR->posy][entityToR->posx] = air;
+        map->map[entityToR->posy][entityToR->posx] = map->air;
         clremove(bullets, nodeToR);
         free(nodeToR->me);
         free(nodeToR);

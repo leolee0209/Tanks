@@ -107,6 +107,17 @@ int loadMapInfo(const char *mapInfoFileName, Map *map)
     map->meRule.bulletspeed = cJSON_IsNumber(mebulletspeed) && mebulletspeed->valueint != 0 ? mebulletspeed->valueint : -1;
     cJSON *firerate = cJSON_GetObjectItemCaseSensitive(me, "firerate");
     map->meRule.firerate = cJSON_IsNumber(firerate) && firerate->valueint != 0 ? firerate->valueint : -1;
+    cJSON *mecharacter = cJSON_GetObjectItemCaseSensitive(me, "character");
+    if (cJSON_IsString(mecharacter))
+        mbstowcs(&map->meRule.character, mecharacter->valuestring, 1);
+    else
+        map->meRule.character = defaulttank;
+    cJSON *mebcharacter = cJSON_GetObjectItemCaseSensitive(me, "bulletcharacter");
+    if (cJSON_IsString(mebcharacter))
+        mbstowcs(&map->meRule.bulletcharacter, mebcharacter->valuestring, 1);
+    else
+        map->meRule.bulletcharacter = defaultbullet;
+
     // enemy
     cJSON *enemy = cJSON_GetObjectItemCaseSensitive(mapInfoJson, "enemy");
     cJSON *enemyspeed = cJSON_GetObjectItemCaseSensitive(enemy, "speed");
@@ -117,6 +128,16 @@ int loadMapInfo(const char *mapInfoFileName, Map *map)
     map->enemyRule.bulletspeed = cJSON_IsNumber(enemyBulletSpeed) && enemyBulletSpeed->valueint != 0 ? enemyBulletSpeed->valueint : -1;
     cJSON *random = cJSON_GetObjectItemCaseSensitive(enemy, "random");
     map->enemyRule.random = cJSON_IsNumber(random) && random->valueint != 0 ? random->valueint : -1;
+    cJSON *echaracter = cJSON_GetObjectItemCaseSensitive(enemy, "character");
+    if (cJSON_IsString(echaracter))
+        mbstowcs(&map->enemyRule.character, echaracter->valuestring, 1);
+    else
+        map->enemyRule.character = defaultenemy;
+    cJSON *ebcharacter = cJSON_GetObjectItemCaseSensitive(enemy, "bulletcharacter");
+    if (cJSON_IsString(ebcharacter))
+        mbstowcs(&map->enemyRule.bulletcharacter, ebcharacter->valuestring, 1);
+    else
+        map->enemyRule.bulletcharacter = defaultbullet;
     // map
     cJSON *mapinfo = cJSON_GetObjectItemCaseSensitive(mapInfoJson, "map");
     cJSON *height = cJSON_GetObjectItemCaseSensitive(mapinfo, "height");
@@ -134,6 +155,16 @@ int loadMapInfo(const char *mapInfoFileName, Map *map)
         map->frameMicroSec = frameMicroSec->valueint;
     else
         map->frameMicroSec = 50000;
+    cJSON *air = cJSON_GetObjectItemCaseSensitive(mapinfo, "air");
+    if (cJSON_IsString(air))
+        mbstowcs(&map->air, air->valuestring, 1);
+    else
+        map->air = defaultair;
+    cJSON *wall = cJSON_GetObjectItemCaseSensitive(mapinfo, "wall");
+    if (cJSON_IsString(wall))
+        mbstowcs(&map->wall, wall->valuestring, 1);
+    else
+        map->wall = defaultwall;
 
     cJSON_Delete(mapInfoJson);
     fclose(mapInfoFile);
@@ -163,7 +194,7 @@ int loadMap(const char *mapFileName, Map *map)
         wcsncpy(map->map[i], temp, map->width);
         for (int j = 0; j < map->width; j++)
         {
-            if (map->map[i][j] == tank)
+            if (map->map[i][j] == map->meRule.character)
             {
                 map->inity = i;
                 map->initx = j;
@@ -187,7 +218,7 @@ int getEmptyPos(Map *map, int **available)
     {
         for (int j = 0; j < map->width; j++)
         {
-            if (map->map[i][j] == air)
+            if (map->map[i][j] == map->air)
             {
                 available[avaiCount] = malloc(sizeof(int) * 2);
                 if (available[avaiCount])
@@ -206,7 +237,7 @@ int checkEmpty(Map *map, int y, int x)
 {
     if (checkInBound(map, y, x))
     {
-        return map->map[y][x] == air;
+        return map->map[y][x] == map->air;
     }
     return FAIL;
 }

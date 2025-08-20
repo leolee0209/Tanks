@@ -25,9 +25,11 @@ int main()
     Map map;
     if (!initMap(&map))
         return 0;
-    entity me = {.posy = map.inity, .posx = map.initx, .character = tank, .direction = 'n'};
+    entity me = {.posy = map.inity, .posx = map.initx, .character = map.meRule.character, .direction = 'n'};
     cllist *bullets = clinit();
     cllist *enemies = clinit();
+
+    int debugMode = 0;
 
     int input = 0;
     clock_t t;
@@ -45,24 +47,34 @@ int main()
             wprintw(win, "Exiting the program.\n");
             break;
         }
+        if (input == 'm')
+        {
+            debugMode = !debugMode;
+            nodelay(win, !debugMode);
+        }
 
         spawnEnemy(&map, enemies, counter);
-        spawnBullet(&map,&me, bullets, bullets, counter);
+        spawnBullet(&map, &me, bullets, bullets, counter);
 
         moveMe(&map, &me, counter);
         moveEnemy(&map, enemies, counter);
         moveBullets(&map, bullets, counter);
 
         counter++;
-        t = clock() - t;
-        if(map.frameMicroSec - 1000000 * t / CLOCKS_PER_SEC<=0){
-            continue;
+        if (!debugMode)
+        {
+            t = clock() - t;
+            if (map.frameMicroSec - 1000000 * t / CLOCKS_PER_SEC <= 0)
+            {
+                continue;
+            }
+            usleep(map.frameMicroSec - 1000000 * t / CLOCKS_PER_SEC);
         }
-        usleep(map.frameMicroSec - 1000000 * t / CLOCKS_PER_SEC);
     }
 
     closeMap(&map);
     closeEntityList(enemies);
+    closeEntityList(bullets);
     endwin();
     return 0;
 }
@@ -80,7 +92,7 @@ WINDOW *initCursesWindow()
 void getInput(int *input, char *move, WINDOW *win)
 {
     *input = wgetch(win);
-    if (*input != ERR)
+    if (*input != ERR && *input == 'w' || *input == 's' || *input == 'a' || *input == 'd')
     {
         *move = *input;
     }

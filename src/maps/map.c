@@ -91,7 +91,7 @@ void spawnEnemy(Map *map, cllist *enemies, int counter)
     entity *me = new->me;
     if (new)
     {
-        *(entity *)new->me = (entity){.character = L'Ｅ', .posy = p[0], .posx = p[1]};
+        *(entity *)new->me = (entity){.character = map->enemyRule.character, .posy = p[0], .posx = p[1]};
         clappend(enemies, new);
         map->map[me->posy][me->posx] = me->character;
     }
@@ -119,10 +119,10 @@ void spawnBullet(Map *map, entity *me, cllist *start, cllist *bullets, int count
             return;
         }
         entity *newBullet = malloc(sizeof(entity));
-        *newBullet = (entity){.character = L'。', .direction = me->direction, .posy = n[0], .posx = n[1]};
+        *newBullet = (entity){.character = map->meRule.bulletcharacter, .direction = me->direction, .posy = n[0], .posx = n[1]};
 
         clappend(bullets, newnode(newBullet));
-        map->map[n[0]][n[1]] = L'。';
+        map->map[n[0]][n[1]] = map->meRule.bulletcharacter;
     }
     free(n);
 }

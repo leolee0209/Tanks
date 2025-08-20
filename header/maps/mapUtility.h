@@ -7,6 +7,8 @@ typedef struct EnemyRule
     int firerate;
     int bulletspeed;
     int speed;
+    wchar_t character;
+    wchar_t bulletcharacter;
 } EnemyRule;
 
 typedef struct MeRule
@@ -14,6 +16,8 @@ typedef struct MeRule
     int firerate;
     int bulletspeed;
     int speed;
+    wchar_t character;
+    wchar_t bulletcharacter;
 } MeRule;
 
 typedef struct Map
@@ -24,6 +28,8 @@ typedef struct Map
     wchar_t **map;
     EnemyRule enemyRule;
     MeRule meRule;
+    wchar_t air;
+    wchar_t wall;
 } Map;
 
 int checkEmpty(Map *map, int y, int x);
