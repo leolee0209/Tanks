@@ -8,10 +8,10 @@
 #include "tank.h"
 #include "characters.h"
 
-int initMap(Map *map)
+int initMap(Map *map, char* dir)
 {
     char *mapPath, *mapInfoPath;
-    if (!getFilePaths("/home/leo/Projects/Tanks/data/box/", &mapPath, &mapInfoPath))
+    if (!getFilePaths(dir, &mapPath, &mapInfoPath))
     {
         return FAIL;
     }

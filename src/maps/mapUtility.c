@@ -89,7 +89,8 @@ clnode *getBullet(cllist *bullets, int y, int x)
 }
 int getFilePaths(const char *dirPath, char **mapFileName, char **mapInfoFileName)
 {
-
+    realloc(dirPath, sizeof(char) * (strlen(dirPath) + 10));
+    strncat(dirPath, "/data/box/", 11);
     if (!(*mapInfoFileName = calloc(strlen(dirPath) + strlen(mapinfojson) + 1, sizeof(char))))
     {
         ERROR("calloc failed.\n");

@@ -5,7 +5,7 @@
 #include "circleList.h"
 #include "mapUtility.h"
 
-int initMap(Map* map);
+int initMap(Map* map, char* dir);
 void closeMap(Map *map);
 void closeEntityList(cllist *start);
 void printMap(WINDOW* win, Map *map);
