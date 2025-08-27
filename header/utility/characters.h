@@ -18,6 +18,7 @@ typedef struct entity
     int posy;
     wchar_t character;
     char direction;
-}entity;
+    unsigned int count;
+} entity;
 
 #endif // CHARACTERS_H

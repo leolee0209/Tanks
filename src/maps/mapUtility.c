@@ -2,14 +2,96 @@
 #define _XOPEN_SOURCE_EXTENDED
 #endif
 #include <mapUtility.h>
-#include "LLog.hpp"
 #include <stdlib.h>
 #include <ncurses.h>
 #include <string.h>
 #include "cJSON.h"
 #include <stdio.h>
 #include <wchar.h>
+#include "log.h"
 
+void spawnMyBullets(Map *map, entity *me, cllist *enemies, cllist *bullets, int counter)
+{
+    if (map->meRule.firerate == -1 || counter % map->meRule.firerate != 0)
+    {
+        return;
+    }
+    int *n = nextPos(map, me);
+    if (!n)
+        return;
+    if (inBound(map, n[0], n[1]) && !isWall(map, n[0], n[1]))
+    {
+        if (isEnemy(map, n[0], n[1]))
+        {
+            clnode *r = getEnemy(enemies, n[0], n[1]);
+            if (r)
+            {
+                entity *re = r->me;
+                map->map[re->posy][re->posx] = map->air;
+                clremove(enemies, r);
+                free(re);
+                free(r);
+            }
+        }
+        entity *newBullet = malloc(sizeof(entity));
+        *newBullet = (entity){.character = map->meRule.bulletcharacter,
+                              .direction = me->direction,
+                              .count = counter,
+                              .posy = n[0],
+                              .posx = n[1]};
+
+        clappend(bullets, newnode(newBullet));
+        map->map[n[0]][n[1]] = map->meRule.bulletcharacter;
+    }
+    free(n);
+}
+int spawnEnemyBullets(Map *map, entity *me, cllist *enemies, cllist *bullets, int counter)
+{
+    int hit = 0;
+    for (cliterator i = clgetIter(enemies); i.now != NULL; clnext(&i))
+    {
+        entity *e = i.now->me;
+        if (map->enemyRule.firerate == -1 || (counter - e->count) % map->enemyRule.firerate != 0)
+        {
+            continue;
+        }
+        int *n = nextPos(map, e);
+        if (!n)
+            continue;
+        if (inBound(map, n[0], n[1]) && !isWall(map, n[0], n[1]))
+        {
+            if (isEnemy(map, n[0], n[1]))
+            {
+                clnode *r = getEnemy(enemies, n[0], n[1]);
+                if (r)
+                {
+                    entity *re = r->me;
+                    map->map[re->posy][re->posx] = map->air;
+                    clremove(enemies, r);
+                    free(re);
+                    free(r);
+                }
+                continue;
+            }
+            else if (n[0] == me->posy && n[1] == me->posx)
+            {
+                hit = 1;
+                continue;
+            }
+            entity *newBullet = malloc(sizeof(entity));
+            *newBullet = (entity){.character = map->enemyRule.bulletcharacter,
+                                  .direction = ((entity *)(i.now->me))->direction,
+                                  .count = counter,
+                                  .posy = n[0],
+                                  .posx = n[1]};
+
+            clappend(bullets, newnode(newBullet));
+            map->map[n[0]][n[1]] = map->enemyRule.bulletcharacter;
+        }
+        free(n);
+    }
+    return hit;
+}
 int allocMap(Map *map, int h, int w)
 {
     if (!map)
@@ -49,6 +131,7 @@ int *nextPos(Map *map, entity *e)
         break;
 
     default:
+        free(next);
         return NULL;
     }
     return next;
@@ -89,23 +172,32 @@ clnode *getBullet(cllist *bullets, int y, int x)
 }
 int getFilePaths(const char *dirPath, char **mapFileName, char **mapInfoFileName)
 {
-    realloc(dirPath, sizeof(char) * (strlen(dirPath) + 10));
-    strncat(dirPath, "/data/box/", 11);
-    if (!(*mapInfoFileName = calloc(strlen(dirPath) + strlen(mapinfojson) + 1, sizeof(char))))
+    int len = strlen(dirPath) + 12;
+    char *pathToMapFolder = malloc(sizeof(char) * len);
+    if (!pathToMapFolder)
     {
-        ERROR("calloc failed.\n");
         return FAIL;
     }
-    strcat(*mapInfoFileName, dirPath);
+    strncpy(pathToMapFolder, dirPath, len);
+    strncat(pathToMapFolder, "/data/box/", 11);
+    if (!(*mapInfoFileName = calloc(len + strlen(mapinfojson) + 1, sizeof(char))))
+    {
+        logc("getFilePaths", "calloc failed.\n");
+        free(pathToMapFolder);
+        return FAIL;
+    }
+    strcat(*mapInfoFileName, pathToMapFolder);
     strcat(*mapInfoFileName, mapinfojson);
 
-    if (!(*mapFileName = calloc(strlen(dirPath) + strlen(maptxt) + 1, sizeof(char))))
+    if (!(*mapFileName = calloc(len + strlen(maptxt) + 1, sizeof(char))))
     {
-        ERROR("calloc failed.\n");
+        logc("getFilePaths", "calloc failed.\n");
+        free(pathToMapFolder);
         return FAIL;
     }
-    strcat(*mapFileName, dirPath);
+    strcat(*mapFileName, pathToMapFolder);
     strcat(*mapFileName, maptxt);
+    free(pathToMapFolder);
 
     return SUCCESS;
 }
@@ -115,18 +207,19 @@ int loadMapInfo(const char *mapInfoFileName, Map *map)
     FILE *mapInfoFile = fopen(mapInfoFileName, "r");
     if (!mapInfoFile || !map)
     {
-        ERROR("FILEIO.\n");
+        logc("loadMapInfo", "FILEIO.\n");
         return FAIL;
     }
 
     char str[1024];
     char rule[256];
+    wchar_t tmpchar[1] = {0};
     int value;
 
     int len = fread(str, sizeof(char), 1024, mapInfoFile);
     if (!feof(mapInfoFile) && ferror(mapInfoFile))
     {
-        ERROR("FILEIO.\n");
+        logc("loadMapInfo", "FILEIO.\n");
         fclose(mapInfoFile);
         return FAIL;
     }
@@ -136,7 +229,7 @@ int loadMapInfo(const char *mapInfoFileName, Map *map)
         const char *error_ptr = cJSON_GetErrorPtr();
         if (error_ptr != NULL)
         {
-            ERROR(error_ptr);
+            logc("loadMapInfo", error_ptr);
         }
         cJSON_Delete(mapInfoJson);
         return FAIL;
@@ -151,12 +244,18 @@ int loadMapInfo(const char *mapInfoFileName, Map *map)
     map->meRule.firerate = cJSON_IsNumber(firerate) && firerate->valueint != 0 ? firerate->valueint : -1;
     cJSON *mecharacter = cJSON_GetObjectItemCaseSensitive(me, "character");
     if (cJSON_IsString(mecharacter))
-        mbstowcs(&map->meRule.character, mecharacter->valuestring, 1);
+    {
+        mbstowcs(tmpchar, mecharacter->valuestring, 1);
+        map->meRule.character = tmpchar[0];
+    }
     else
         map->meRule.character = defaulttank;
     cJSON *mebcharacter = cJSON_GetObjectItemCaseSensitive(me, "bulletcharacter");
     if (cJSON_IsString(mebcharacter))
-        mbstowcs(&map->meRule.bulletcharacter, mebcharacter->valuestring, 1);
+    {
+        mbstowcs(tmpchar, mebcharacter->valuestring, 1);
+        map->meRule.bulletcharacter = tmpchar[0];
+    }
     else
         map->meRule.bulletcharacter = defaultbullet;
 
@@ -170,14 +269,22 @@ int loadMapInfo(const char *mapInfoFileName, Map *map)
     map->enemyRule.bulletspeed = cJSON_IsNumber(enemyBulletSpeed) && enemyBulletSpeed->valueint != 0 ? enemyBulletSpeed->valueint : -1;
     cJSON *random = cJSON_GetObjectItemCaseSensitive(enemy, "random");
     map->enemyRule.random = cJSON_IsNumber(random) && random->valueint != 0 ? random->valueint : -1;
+    cJSON *efirerate = cJSON_GetObjectItemCaseSensitive(enemy, "firerate");
+    map->enemyRule.firerate = cJSON_IsNumber(efirerate) && efirerate->valueint != 0 ? efirerate->valueint : -1;
     cJSON *echaracter = cJSON_GetObjectItemCaseSensitive(enemy, "character");
     if (cJSON_IsString(echaracter))
-        mbstowcs(&map->enemyRule.character, echaracter->valuestring, 1);
+    {
+        mbstowcs(tmpchar, echaracter->valuestring, 1);
+        map->enemyRule.character = tmpchar[0];
+    }
     else
         map->enemyRule.character = defaultenemy;
     cJSON *ebcharacter = cJSON_GetObjectItemCaseSensitive(enemy, "bulletcharacter");
     if (cJSON_IsString(ebcharacter))
-        mbstowcs(&map->enemyRule.bulletcharacter, ebcharacter->valuestring, 1);
+    {
+        mbstowcs(tmpchar, ebcharacter->valuestring, 1);
+        map->enemyRule.bulletcharacter = tmpchar[0];
+    }
     else
         map->enemyRule.bulletcharacter = defaultbullet;
     // map

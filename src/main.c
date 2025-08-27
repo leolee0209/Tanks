@@ -7,10 +7,10 @@
 #include "tank.h"
 #include <time.h>
 #include "circleList.h"
+#include "log.h"
 #include <unistd.h>
 #include <locale.h>
 #include <characters.h>
-#include "LLog.hpp"
 #include <string.h>
 
 WINDOW *initCursesWindow();
@@ -26,7 +26,11 @@ int main(int argc, char *argv[])
     if (!initMap(&map, dir))
         return 0;
     free(dir);
-    entity me = {.posy = map.inity, .posx = map.initx, .character = map.meRule.character, .direction = 'n'};
+    entity me = {.character = map.meRule.character,
+                 .direction = 'n',
+                 .count = 1,
+                 .posy = map.inity,
+                 .posx = map.initx};
     cllist *bullets = clinit();
     cllist *enemies = clinit();
 
@@ -44,7 +48,6 @@ int main(int argc, char *argv[])
         getInput(&input, &me.direction, win);
         if (input == 'q')
         {
-            wprintw(win, "Exiting the program.\n");
             break;
         }
         if (input == 'm')
@@ -53,12 +56,18 @@ int main(int argc, char *argv[])
             nodelay(win, !debugMode);
         }
 
-        spawnEnemy(&map, enemies, counter);
-        spawnBullet(&map, &me, bullets, bullets, counter);
-
         moveMe(&map, &me, counter);
         moveEnemy(&map, enemies, bullets, counter);
-        moveBullets(&map, bullets, enemies, counter);
+
+        spawnEnemy(&map, enemies, counter);
+        if (spawnBullet(&map, &me, enemies, bullets, counter))
+        {
+            break;
+        }
+        if (moveBullets(&map, &me, bullets, enemies, counter))
+        {
+            break;
+        }
 
         counter++;
         if (!debugMode)
@@ -92,7 +101,7 @@ WINDOW *initCursesWindow()
 void getInput(int *input, char *move, WINDOW *win)
 {
     *input = wgetch(win);
-    if (*input != ERR && *input == 'w' || *input == 's' || *input == 'a' || *input == 'd')
+    if (*input != ERR && (*input == 'w' || *input == 's' || *input == 'a' || *input == 'd'))
     {
         *move = *input;
     }
@@ -129,7 +138,7 @@ char *init()
         return NULL;
     strncpy(logDir, dir, strlen(dir));
     strncat(logDir, "/log.txt", 10);
-    LoggerInit(logDir, 1);
+    loggerInit(logDir);
     free(logDir);
     return dir;
 }

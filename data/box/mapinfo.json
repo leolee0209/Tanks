@@ -11,7 +11,7 @@
         "random": 10,
         "firerate": 10,
         "bulletspeed": 3,
-        "max": 3,
+        "max": 1,
         "character":"Ｅ",
         "bulletcharacter":"。"
     },

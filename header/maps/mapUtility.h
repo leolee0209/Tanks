@@ -47,3 +47,5 @@ clnode *getEnemy(cllist *enemies, int y, int x);
 clnode *getBullet(cllist *bullets, int y, int x);
 int isEmpty(Map *map, int y, int x);
 int isBullet(Map *map, int y, int x);
+void spawnMyBullets(Map *map, entity *me, cllist *enemies, cllist *bullets, int counter);
+int spawnEnemyBullets(Map *map, entity *me, cllist *enemies, cllist *bullets, int counter);

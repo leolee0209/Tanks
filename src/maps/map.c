@@ -8,7 +8,7 @@
 #include "tank.h"
 #include "characters.h"
 
-int initMap(Map *map, char* dir)
+int initMap(Map *map, char *dir)
 {
     char *mapPath, *mapInfoPath;
     if (!getFilePaths(dir, &mapPath, &mapInfoPath))
@@ -86,7 +86,11 @@ void spawnEnemy(Map *map, cllist *enemies, int counter)
 
     int *p = available[random() % avaiCount];
     entity *me = malloc(sizeof(entity));
-    *me = (entity){.character = map->enemyRule.character, .posy = p[0], .posx = p[1]};
+    *me = (entity){.character = map->enemyRule.character,
+                   .direction = 'n',
+                   .count = counter,
+                   .posy = p[0],
+                   .posx = p[1]};
     clappend(enemies, newnode(me));
     map->map[me->posy][me->posx] = me->character;
 
@@ -97,34 +101,8 @@ void spawnEnemy(Map *map, cllist *enemies, int counter)
     free(available);
 }
 
-void spawnBullet(Map *map, entity *me, cllist *enemies, cllist *bullets, int counter)
+int spawnBullet(Map *map, entity *me, cllist *enemies, cllist *bullets, int counter)
 {
-    if (map->meRule.firerate == -1 || counter % map->meRule.firerate != 0)
-    {
-        return;
-    }
-    int *n = nextPos(map, me);
-    if (!n)
-        return;
-    if (inBound(map, n[0], n[1]) && !isWall(map, n[0], n[1]))
-    {
-        if (isEnemy(map, n[0], n[1]))
-        {
-            clnode *r = getEnemy(enemies, n[0], n[1]);
-            if (r)
-            {
-                entity *re = r->me;
-                map->map[re->posy][re->posx] = map->air;
-                clremove(enemies, r);
-                free(re);
-                free(r);
-            }
-        }
-        entity *newBullet = malloc(sizeof(entity));
-        *newBullet = (entity){.character = map->meRule.bulletcharacter, .direction = me->direction, .posy = n[0], .posx = n[1]};
-
-        clappend(bullets, newnode(newBullet));
-        map->map[n[0]][n[1]] = map->meRule.bulletcharacter;
-    }
-    free(n);
+    spawnMyBullets(map, me, enemies, bullets, counter);
+    return spawnEnemyBullets(map, me, enemies, bullets, counter);
 }
