@@ -4,7 +4,6 @@
 #include "map.h"
 #include <ncurses.h>
 #include <stdlib.h>
-#include "circleList.h"
 #include "tank.h"
 #include "characters.h"
 
@@ -41,17 +40,9 @@ void closeMap(Map *map)
     free(map->map);
 }
 
-void closeEntityList(cllist *l)
-{
-    for (cliterator i = clgetIter(l); i.now != NULL; clnext(&i))
-    {
-        free(i.now->me);
-    }
-    clfree(l);
-}
-
 void printMap(WINDOW *win, Map *map)
 {
+    wclear(win);
     wchar_t *temp = malloc(sizeof(wchar_t) * (map->width + 2));
     for (int i = 0; i < map->height; i++)
     {
@@ -65,14 +56,14 @@ void printMap(WINDOW *win, Map *map)
     free(temp);
 }
 
-void spawnEnemy(Map *map, cllist *enemies, int counter)
+void spawnEnemy(Map *map, Earray *enemies, int counter)
 {
     if (map->enemyRule.random == -1 || counter % map->enemyRule.random != 0)
     {
         return;
     }
 
-    if (map->enemyRule.max == -1 || cllength(enemies) >= map->enemyRule.max)
+    if (map->enemyRule.max == -1 || enemies->last + 1 >= map->enemyRule.max || enemies->last >= (int)enemies->max - 1)
     {
         return;
     }
@@ -81,18 +72,21 @@ void spawnEnemy(Map *map, cllist *enemies, int counter)
     int avaiCount = 0;
     if (!(avaiCount = getEmptyPos(map, available)))
     {
+        // no available
+        free(available);
         return;
     }
 
+    // randomly spawn enemy
     int *p = available[random() % avaiCount];
-    entity *me = malloc(sizeof(entity));
-    *me = (entity){.character = map->enemyRule.character,
-                   .direction = 'n',
-                   .count = counter,
-                   .posy = p[0],
-                   .posx = p[1]};
-    clappend(enemies, newnode(me));
-    map->map[me->posy][me->posx] = me->character;
+    enemies->e[enemies->last + 1] = (entity){0};
+    enemies->e[enemies->last + 1] = (entity){.character = map->enemyRule.character,
+                                             .direction = 'n',
+                                             .count = counter,
+                                             .p = (pos){p[0], p[1]}};
+
+    enemies->last++;
+    map->map[enemies->e[enemies->last].p.y][enemies->e[enemies->last].p.x] = enemies->e[enemies->last].character;
 
     for (int i = 0; i < avaiCount; i++)
     {
@@ -101,7 +95,7 @@ void spawnEnemy(Map *map, cllist *enemies, int counter)
     free(available);
 }
 
-int spawnBullet(Map *map, entity *me, cllist *enemies, cllist *bullets, int counter)
+int spawnBullet(Map *map, entity *me, Earray *enemies, Barray *bullets, int counter)
 {
     spawnMyBullets(map, me, enemies, bullets, counter);
     return spawnEnemyBullets(map, me, enemies, bullets, counter);

@@ -1,173 +1,188 @@
 #include "tank.h"
 #include "map.h"
 #include "characters.h"
+#include <wchar.h>
 #include <stdlib.h>
 
-void putTank(Map *map, entity *tank, int ay, int ax)
+void putTank(Map *map, pos *p, int ay, int ax, wchar_t character)
 {
     if (!(ay == 0 && ax == 0))
     {
-        map->map[tank->posy][tank->posx] = map->air;
-        tank->posy += ay;
-        tank->posx += ax;
+        map->map[p->y][p->x] = map->air;
+        p->y += ay;
+        p->x += ax;
     }
-    map->map[tank->posy][tank->posx] = tank->character;
+    map->map[p->y][p->x] = character;
 }
 
-void moveTank(Map *map, entity *tank, char move)
+void moveTank(Map *map, pos *p, char move, wchar_t character)
 {
-    int x = tank->posx, y = tank->posy;
     switch (move)
     {
     case 'w':
-        if (isEmpty(map, y - 1, x))
-            putTank(map, tank, -1, 0);
+        if (isEmpty(map, (pos){p->y - 1, p->x}))
+            putTank(map, p, -1, 0, character);
         break;
     case 'a':
-        if (isEmpty(map, y, x - 1))
-            putTank(map, tank, 0, -1);
+        if (isEmpty(map, (pos){p->y, p->x - 1}))
+            putTank(map, p, 0, -1, character);
         break;
     case 's':
-        if (isEmpty(map, y + 1, x))
-            putTank(map, tank, +1, 0);
+        if (isEmpty(map, (pos){p->y + 1, p->x}))
+            putTank(map, p, +1, 0, character);
         break;
     case 'd':
-        if (isEmpty(map, y, x + 1))
-            putTank(map, tank, 0, 1);
+        if (isEmpty(map, (pos){p->y, p->x + 1}))
+            putTank(map, p, 0, 1, character);
         break;
     }
 }
 
-void moveEnemy(Map *map, cllist *enemies, cllist *bullets, int count)
+void moveEnemy(Map *map, Earray *enemies, Barray *bullets, int count)
 {
-    if (enemies->start == NULL || map->enemyRule.speed == -1)
+    if (enemies->last == -1 || map->enemyRule.speed == -1)
         return;
 
-    cllist *toRemove = clinit();
-    int *n = NULL;
-    for (cliterator i = clgetIter(enemies); i.now != NULL; clnext(&i))
+    pos *n = NULL;
+    for (int i = 0; i <= enemies->last && i < (int)enemies->max; i++)
     {
-        entity *e = i.now->me;
+        entity *e = &(enemies->e)[i];
         if ((count - e->count) % map->enemyRule.speed != 0)
             continue;
 
-        if (!(n = nextPos(map, e)))
+        if (!(n = nextPos(map, e->p, e->direction)))
         {
             getAiDirection(map, e);
         }
-        else if (!inBound(map, n[0], n[1]))
+        else if (!inBound(map, *n))
         {
-            clappend(toRemove, newnode(i.now));
+            // remove enemy
+            enemies->e[i] = enemies->e[enemies->last];
+            enemies->last--;
+            i--;
         }
-        else if (isAir(map, n[0], n[1]))
+        else if (isAir(map, *n))
         {
             getAiDirection(map, e);
-            moveTank(map, e, e->direction);
+            moveTank(map, &e->p, e->direction, e->character);
         }
-        else if (isWall(map, n[0], n[1]) || isEnemy(map, n[0], n[1]))
+        else if (isWall(map, *n) || isEnemy(map, *n))
         {
             getAiDirection(map, e);
         }
-        else if (isBullet(map, n[0], n[1]))
+        else if (isBullet(map, *n))
         {
-            clappend(toRemove, newnode(i.now));
-            clnode *r = getBullet(bullets, n[0], n[1]);
-            if (r)
+            // remove enemy
+            map->map[e->p.y][e->p.x] = map->air;
+            enemies->e[i] = enemies->e[enemies->last];
+            enemies->last--;
+            i--;
+
+            // remove bullet
+            Bentity *tmpB = NULL;
+            for (int j = 0; j <= bullets->last && j < (int)bullets->max; j++)
             {
-                entity *re = r->me;
-                map->map[re->posy][re->posx] = map->air;
-                clremove(bullets, r);
-                free(re);
-                free(r);
+                tmpB = &(bullets->e)[j];
+                if (tmpB->p.y == n->y && tmpB->p.x == n->x)
+                {
+                    map->map[n->y][n->x] = map->air;
+                    bullets->e[j] = bullets->e[bullets->last];
+                    bullets->last--;
+                    break;
+                }
             }
         }
     }
     free(n);
-
-    clnode *nodeToR = NULL;
-    entity *entityToR = NULL;
-    for (cliterator i = clgetIter(toRemove); i.now != NULL; clnext(&i))
-    {
-        nodeToR = (clnode *)(i.now->me);
-        entityToR = (entity *)(nodeToR->me);
-        map->map[entityToR->posy][entityToR->posx] = map->air;
-        clremove(enemies, nodeToR);
-        free(nodeToR->me);
-        free(nodeToR);
-    }
-    clfree(toRemove);
 }
 void moveMe(Map *map, entity *me, int count)
 {
     if (map->meRule.speed == -1 || count % map->meRule.speed != 0)
         return;
-    moveTank(map, me, me->direction);
+    moveTank(map, &me->p, me->direction, me->character);
 }
 
-int moveBullets(Map *map, entity *me, cllist *bullets, cllist *enemies, int count)
+int moveBullets(Map *map, Earray *enemies, Barray *bullets, entity *me, int count)
 {
-    if (bullets->start == NULL || map->meRule.bulletspeed == -1)
+    if (bullets->last == -1)
         return 0;
 
     int hit = 0;
-    cllist *toRemove = clinit();
-    int *n = NULL;
-    for (cliterator i = clgetIter(bullets); i.now != NULL; clnext(&i))
+    pos *n = NULL;
+    for (int i = 0; i <= bullets->last && i < (int)bullets->max; i++)
     {
-        entity *e = i.now->me;
-        if ((count - e->count) % map->meRule.bulletspeed != 0)
-            continue;
-        if (n = nextPos(map, e))
+        Bentity *e = &(bullets->e[i]);
+        if (e->o == ENEMY)
         {
-            if (!inBound(map, n[0], n[1]))
-            {
-                clappend(toRemove, newnode(i.now));
+            if (map->enemyRule.bulletspeed == -1 || (count - e->count) % map->enemyRule.bulletspeed != 0)
                 continue;
-            }
-            if (!isAir(map, n[0], n[1]))
+        }
+        else if (e->o == PLAYER)
+        {
+            if (map->meRule.bulletspeed == -1 || (count - e->count) % map->meRule.bulletspeed != 0)
+                continue;
+        }
+
+        if (!(n = nextPos(map, e->p, e->direction)))
+        {
+            // remove bullet
+            map->map[e->p.y][e->p.x] = map->air;
+            bullets->e[i] = bullets->e[bullets->last];
+            bullets->last--;
+            i--;
+        }
+        else if (!inBound(map, *n))
+        {
+            // remove bullet
+            bullets->e[i] = bullets->e[bullets->last];
+            bullets->last--;
+            i--;
+        }
+        else if (isAir(map, *n))
+        {
+            // move
+            moveTank(map, &e->p, e->direction, e->character);
+        }
+        else if (isWall(map, *n))
+        {
+            // remove bullet
+            map->map[e->p.y][e->p.x] = map->air;
+            bullets->e[i] = bullets->e[bullets->last];
+            bullets->last--;
+            i--;
+        }
+        else if (isEnemy(map, *n))
+        {
+            // remove bullet
+            map->map[e->p.y][e->p.x] = map->air;
+            bullets->e[i] = bullets->e[bullets->last];
+            bullets->last--;
+            i--;
+            // remove enemy
+            entity *tmpE = NULL;
+            for (int j = 0; j <= enemies->last && j < (int)enemies->max; j++)
             {
-                if (isWall(map, n[0], n[1]))
+                tmpE = &(enemies->e)[j];
+                if (tmpE->p.y == n->y && tmpE->p.x == n->x)
                 {
-                    clappend(toRemove, newnode(i.now));
-                    continue;
-                }
-                else if (isEnemy(map, n[0], n[1]))
-                {
-                    clappend(toRemove, newnode(i.now));
-                    clnode *r = getEnemy(enemies, n[0], n[1]);
-                    if (r)
-                    {
-                        entity *re = r->me;
-                        map->map[re->posy][re->posx] = map->air;
-                        clremove(enemies, r);
-                        free(re);
-                        free(r);
-                    }
-                    continue;
-                }
-                else if (n[0] == me->posy && n[1] == me->posx)
-                {
-                    clappend(toRemove, newnode(i.now));
-                    hit = 1;
+                    map->map[n->y][n->x] = map->air;
+                    enemies->e[j] = enemies->e[enemies->last];
+                    enemies->last--;
+                    break;
                 }
             }
-            moveTank(map, e, e->direction);
+        }
+        else if (n->y == me->p.y && n->x == me->p.x)
+        {
+            // remove bullet
+            map->map[e->p.y][e->p.x] = map->air;
+            bullets->e[i] = bullets->e[bullets->last];
+            bullets->last--;
+            i--;
+            hit = 1;
         }
     }
     free(n);
-
-    clnode *nodeToR = NULL;
-    entity *entityToR = NULL;
-    for (cliterator i = clgetIter(toRemove); i.now != NULL; clnext(&i))
-    {
-        nodeToR = (clnode *)(i.now->me);
-        entityToR = (entity *)(nodeToR->me);
-        map->map[entityToR->posy][entityToR->posx] = map->air;
-        clremove(bullets, nodeToR);
-        free(nodeToR->me);
-        free(nodeToR);
-    }
-    clfree(toRemove);
     return hit;
 }
 

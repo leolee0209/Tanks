@@ -1,22 +1,22 @@
 {
     "me": {
-        "speed": 6,
-        "firerate": 20,
+        "speed": 12,
+        "firerate": 40,
         "bulletspeed": 3,
         "character":"＠",
         "bulletcharacter":"。"
     },
     "enemy": {
-        "speed": 5,
-        "random": 10,
-        "firerate": 10,
-        "bulletspeed": 3,
+        "speed": 10,
+        "random": 20,
+        "firerate": 40,
+        "bulletspeed": 6,
         "max": 1,
         "character":"Ｅ",
         "bulletcharacter":"。"
     },
     "map": {
-        "frameMicroSec": 50000,
+        "frameMicroSec": 25000,
         "height": 10,
         "width": 20,
         "wall":"＃",

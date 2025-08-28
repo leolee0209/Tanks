@@ -10,83 +10,88 @@
 #include <wchar.h>
 #include "log.h"
 
-void spawnMyBullets(Map *map, entity *me, cllist *enemies, cllist *bullets, int counter)
+void spawnMyBullets(Map *map, entity *me, Earray *enemies, Barray *bullets, int counter)
 {
     if (map->meRule.firerate == -1 || counter % map->meRule.firerate != 0)
     {
         return;
     }
-    int *n = nextPos(map, me);
+    pos *n = nextPos(map, me->p, me->direction);
     if (!n)
         return;
-    if (inBound(map, n[0], n[1]) && !isWall(map, n[0], n[1]))
+    if (inBound(map, *n) && !isWall(map, *n))
     {
-        if (isEnemy(map, n[0], n[1]))
+        if (isEnemy(map, *n))
         {
-            clnode *r = getEnemy(enemies, n[0], n[1]);
-            if (r)
+            entity *tmpE = NULL;
+            for (int i = 0; i <= enemies->last && i < (int)enemies->max; i++)
             {
-                entity *re = r->me;
-                map->map[re->posy][re->posx] = map->air;
-                clremove(enemies, r);
-                free(re);
-                free(r);
+                // remove enemy
+                tmpE = &(enemies->e[i]);
+                if (tmpE->p.y == n->y && tmpE->p.x == n->x)
+                {
+                    map->map[n->y][n->x] = map->air;
+                    enemies->e[i] = enemies->e[enemies->last];
+                    enemies->last--;
+                    break;
+                }
             }
         }
-        entity *newBullet = malloc(sizeof(entity));
-        *newBullet = (entity){.character = map->meRule.bulletcharacter,
-                              .direction = me->direction,
-                              .count = counter,
-                              .posy = n[0],
-                              .posx = n[1]};
-
-        clappend(bullets, newnode(newBullet));
-        map->map[n[0]][n[1]] = map->meRule.bulletcharacter;
+        else if (isAir(map, *n) && bullets->last < (int)bullets->max - 1)
+        {
+            // add new bullet
+            bullets->e[bullets->last + 1] = (Bentity){0};
+            bullets->e[bullets->last + 1] = (Bentity){.character = map->meRule.bulletcharacter,
+                                                      .direction = me->direction,
+                                                      .count = counter,
+                                                      .p = *n,
+                                                      .o = PLAYER};
+            bullets->last++;
+            map->map[n->y][n->x] = map->meRule.bulletcharacter;
+        }
     }
     free(n);
 }
-int spawnEnemyBullets(Map *map, entity *me, cllist *enemies, cllist *bullets, int counter)
+int spawnEnemyBullets(Map *map, entity *me, Earray *enemies, Barray *bullets, int counter)
 {
     int hit = 0;
-    for (cliterator i = clgetIter(enemies); i.now != NULL; clnext(&i))
+    for (int i = 0; i <= enemies->last && i < (int)enemies->max; i++)
     {
-        entity *e = i.now->me;
+        entity *e = &(enemies->e[i]);
         if (map->enemyRule.firerate == -1 || (counter - e->count) % map->enemyRule.firerate != 0)
         {
             continue;
         }
-        int *n = nextPos(map, e);
+        pos *n = nextPos(map, e->p, e->direction);
         if (!n)
             continue;
-        if (inBound(map, n[0], n[1]) && !isWall(map, n[0], n[1]))
+        if (inBound(map, *n) && !isWall(map, *n))
         {
-            if (isEnemy(map, n[0], n[1]))
+            if (isEnemy(map, *n))
             {
-                clnode *r = getEnemy(enemies, n[0], n[1]);
-                if (r)
-                {
-                    entity *re = r->me;
-                    map->map[re->posy][re->posx] = map->air;
-                    clremove(enemies, r);
-                    free(re);
-                    free(r);
-                }
-                continue;
+                // remove enemy
+                map->map[n->y][n->x] = map->air;
+                enemies->e[i] = enemies->e[enemies->last];
+                enemies->last--;
+                i--;
             }
-            else if (n[0] == me->posy && n[1] == me->posx)
+            else if (n->y == me->p.y && n->x == me->p.x)
             {
+                // hit player
                 hit = 1;
-                continue;
             }
-            entity *newBullet = malloc(sizeof(entity));
-            *newBullet = (entity){.character = map->enemyRule.bulletcharacter,
-                                  .direction = ((entity *)(i.now->me))->direction,
-                                  .count = counter,
-                                  .posy = n[0],
-                                  .posx = n[1]};
-
-            clappend(bullets, newnode(newBullet));
-            map->map[n[0]][n[1]] = map->enemyRule.bulletcharacter;
+            else if (isAir(map, *n) && bullets->last < (int)bullets->max - 1)
+            {
+                // add new bullet
+                bullets->e[bullets->last + 1] = (Bentity){0};
+                bullets->e[bullets->last + 1] = (Bentity){.character = map->enemyRule.bulletcharacter,
+                                                          .direction = e->direction,
+                                                          .count = counter,
+                                                          .p = *n,
+                                                          .o = ENEMY};
+                bullets->last++;
+                map->map[n->y][n->x] = map->enemyRule.bulletcharacter;
+            }
         }
         free(n);
     }
@@ -110,24 +115,24 @@ int allocMap(Map *map, int h, int w)
     }
     return SUCCESS;
 }
-int *nextPos(Map *map, entity *e)
+pos *nextPos(Map *map, pos p, char direction)
 {
-    int *next = malloc(sizeof(int) * 2);
-    next[0] = e->posy;
-    next[1] = e->posx;
-    switch (e->direction)
+    pos *next = malloc(sizeof(pos));
+    next->y = p.y;
+    next->x = p.x;
+    switch (direction)
     {
     case 'w':
-        next[0]--;
+        next->y--;
         break;
     case 's':
-        next[0]++;
+        next->y++;
         break;
     case 'a':
-        next[1]--;
+        next->x--;
         break;
     case 'd':
-        next[1]++;
+        next->x++;
         break;
 
     default:
@@ -136,40 +141,15 @@ int *nextPos(Map *map, entity *e)
     }
     return next;
 }
-int isEnemy(Map *map, int y, int x)
+int isEnemy(Map *map, pos p)
 {
-    return map->map[y][x] == map->enemyRule.character;
+    return map->map[p.y][p.x] == map->enemyRule.character;
 }
-int isWall(Map *map, int y, int x)
+int isWall(Map *map, pos p)
 {
-    return map->map[y][x] == map->wall;
+    return map->map[p.y][p.x] == map->wall;
 }
-clnode *getEnemy(cllist *enemies, int y, int x)
-{
-    entity *e;
-    for (cliterator i = clgetIter(enemies); i.now != NULL; clnext(&i))
-    {
-        e = i.now->me;
-        if (e->posy == y && e->posx == x)
-        {
-            return i.now;
-        }
-    }
-    return NULL;
-}
-clnode *getBullet(cllist *bullets, int y, int x)
-{
-    entity *e;
-    for (cliterator i = clgetIter(bullets); i.now != NULL; clnext(&i))
-    {
-        e = i.now->me;
-        if (e->posy == y && e->posx == x)
-        {
-            return i.now;
-        }
-    }
-    return NULL;
-}
+
 int getFilePaths(const char *dirPath, char **mapFileName, char **mapInfoFileName)
 {
     int len = strlen(dirPath) + 12;
@@ -356,14 +336,14 @@ int loadMap(const char *mapFileName, Map *map)
     return SUCCESS;
 }
 
-int isEmpty(Map *map, int y, int x)
+int isEmpty(Map *map, pos p)
 {
-    return inBound(map, y, x) && isAir(map, y, x);
+    return inBound(map, p) && isAir(map, p);
 }
 
-int isBullet(Map *map, int y, int x)
+int isBullet(Map *map, pos p)
 {
-    return map->map[y][x] == map->meRule.bulletcharacter || map->map[y][x] == map->enemyRule.bulletcharacter;
+    return map->map[p.y][p.x] == map->meRule.bulletcharacter || map->map[p.y][p.x] == map->enemyRule.bulletcharacter;
 }
 
 int getEmptyPos(Map *map, int **available)
@@ -392,14 +372,14 @@ int getEmptyPos(Map *map, int **available)
     return avaiCount;
 }
 
-int isAir(Map *map, int y, int x)
+int isAir(Map *map, pos p)
 {
-    return map->map[y][x] == map->air;
+    return map->map[p.y][p.x] == map->air;
 }
 
-int inBound(Map *map, int y, int x)
+int inBound(Map *map, pos p)
 {
-    if (y >= 0 && y < map->height && x >= 0 && x < map->width)
+    if (p.y >= 0 && p.y < map->height && p.x >= 0 && p.x < map->width)
     {
         return SUCCESS;
     }

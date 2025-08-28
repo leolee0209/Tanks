@@ -2,13 +2,13 @@
 #define TANK_H
 #include "map.h"
 #include "characters.h"
-#include "circleList.h"
+#include <wchar.h>
 
-void putTank(Map *map, entity *tank, int ay, int ax);
-void moveTank(Map *map, entity *tank, char move);
-void moveEnemy(Map *map, cllist *enemies,cllist* bullets, int count);
+void putTank(Map *map, pos *p, int ay, int ax, wchar_t character);
+void moveTank(Map *map, pos *p, char move, wchar_t character);
+void moveEnemy(Map *map, Earray *enemies, Barray *bullets, int count);
 char getAiDirection(Map *map, entity *n);
 void moveMe(Map *map, entity *me, int count);
-int moveBullets(Map *map,entity* me, cllist *bullets,cllist* enemies, int count);
+int moveBullets(Map *map, Earray *enemies, Barray *bullets, entity *me, int count);
 
 #endif

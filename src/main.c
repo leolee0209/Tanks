@@ -6,7 +6,6 @@
 #include <ncurses.h>
 #include "tank.h"
 #include <time.h>
-#include "circleList.h"
 #include "log.h"
 #include <unistd.h>
 #include <locale.h>
@@ -29,10 +28,13 @@ int main(int argc, char *argv[])
     entity me = {.character = map.meRule.character,
                  .direction = 'n',
                  .count = 1,
-                 .posy = map.inity,
-                 .posx = map.initx};
-    cllist *bullets = clinit();
-    cllist *enemies = clinit();
+                 .p = (pos){map.inity, map.initx}};
+
+    Bentity b[128];
+    entity e[16];
+
+    Barray bullets = {.e = b, .last = -1, .max = 128};
+    Earray enemies = {.e = e, .last = -1, .max = 16};
 
     int debugMode = 0;
     int input = 0;
@@ -42,7 +44,6 @@ int main(int argc, char *argv[])
     {
         t = clock();
 
-        wclear(win);
         printMap(win, &map);
 
         getInput(&input, &me.direction, win);
@@ -57,14 +58,14 @@ int main(int argc, char *argv[])
         }
 
         moveMe(&map, &me, counter);
-        moveEnemy(&map, enemies, bullets, counter);
+        moveEnemy(&map, &enemies, &bullets, counter);
 
-        spawnEnemy(&map, enemies, counter);
-        if (spawnBullet(&map, &me, enemies, bullets, counter))
+        spawnEnemy(&map, &enemies, counter);
+        if (spawnBullet(&map, &me, &enemies, &bullets, counter))
         {
             break;
         }
-        if (moveBullets(&map, &me, bullets, enemies, counter))
+        if (moveBullets(&map, &enemies, &bullets, &me, counter))
         {
             break;
         }
@@ -82,8 +83,7 @@ int main(int argc, char *argv[])
     }
 
     closeMap(&map);
-    closeEntityList(enemies);
-    closeEntityList(bullets);
+
     endwin();
     return 0;
 }

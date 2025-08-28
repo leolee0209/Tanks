@@ -12,13 +12,47 @@ extern const wchar_t defaultbullet;
 extern const wchar_t defaultenemy;
 extern const char *maptxt;
 extern const char *mapinfojson;
+
+enum Owner
+{
+    PLAYER,
+    ENEMY
+};
+
+typedef struct pos
+{
+    int y;
+    int x;
+} pos;
 typedef struct entity
 {
-    int posx;
-    int posy;
+    pos p;
     wchar_t character;
     char direction;
     unsigned int count;
 } entity;
+
+typedef struct Earray
+{
+    entity *e;
+    unsigned int max;
+    int last;
+} Earray;
+
+typedef struct Bentity
+{
+    pos p;
+    wchar_t character;
+    char direction;
+    unsigned int count;
+    enum Owner o;
+} Bentity;
+
+typedef struct Barray
+{
+    Bentity *e;
+    unsigned int max;
+    int last;
+} Barray;
 
 #endif // CHARACTERS_H
